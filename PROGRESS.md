@@ -10,7 +10,7 @@ Phase 3: Compositor and playback (starting)
 - Phase 2: MP4/MOV demuxer, probe (fps, VFR, rotation, WAV, images), fingerprint, MediaLibrary (offline/relink), VideoSource (WebCodecs, bounded cache), AudioSource (PCM + WebCodecs), media worker (peaks, thumbnails). 118 unit tests; phase2 smoke green.
 
 ## Next step
-Phase 3 step 1: pure render plan in `src/core/render/` (which clips at a tick, transform matrix, fit, crop, opacity, blend) with tests; then `src/engine/compositor` (WebGL2 + Canvas 2D fallback), `renderFrame(project, tick)`, audio-clock transport (play, pause, JKL, step, loop, quality), source/program monitors, phase3 smoke (render hashes, drift, fps, scrub).
+Read RESUME.md first. Phase 3 step 1 (keyframes + render plan in `src/core/render/`) is done and committed. Next: `src/engine/compositor` (WebGL2 + Canvas 2D fallback), `renderFrame(project, tick)`, audio-clock transport (play, pause, JKL, step, loop, quality), source/program monitors, phase3 smoke (render hashes, drift, fps, scrub).
 
 ## Budgets measured
 - 2h open: node 125 ms / 1 MB of 444 MB read; browser ~50 ms. 1080p scrub worst 124 ms (limit 150), mean ~80 ms.

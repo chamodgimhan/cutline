@@ -21,5 +21,20 @@
 - Audio: s16le PCM in `ipcm`, 1 kHz tone (L 8000, R 4000 amplitude), one-sample click of 30000 on each whole second.
 - `long_2h`: 64x48, 24 fps, mono 16 kHz, moov at end, 465 MB.
 
-## Data model
-Defined in Phase 1 (`src/core/model.ts`).
+## Data model (`src/core/model.ts`)
+- `Project { name, media[], sequences[], activeSequenceId }`; `Sequence { width, height, fps: Rational, sampleRate, tracks[], markers[], inPoint, outPoint }`.
+- `Track { kind: video|audio|caption, locked, muted, solo, hidden, volume, pan, clips[] }`. Clips sorted by start, never overlapping. Later video tracks draw on top.
+- `Clip { kind: video|audio|text|adjust|caption, mediaId, start, duration, sourceIn, speed: Rational, reverse, freeze, linkId, video, audio, text, effects[], transitionIn/Out }`. Source out is derived (`clipSourceOut`). A caption cue is a `caption` clip, so cues ripple with every edit.
+- `Param = number | { keys: Keyframe[] }`; keyframe times are relative to clip start.
+- All times are integer ticks (`time.ts`, 705,600,000/s). `mulDiv` (BigInt) for every scaled conversion.
+
+## Core modules (`src/core/`)
+- `command.ts`: `Op` (before/after primitive), `Command { apply(project), invert() }`, `EditError` (user-safe message).
+- `draft.ts`: `Draft` scratch copy of a sequence; edit functions mutate it, `build(label)` diffs to a Command and validates with `checkInvariants`. Refuses locked tracks.
+- `clipmath.ts`: resizeHead/resizeTail/splitClipAt/headRoom/tailRoom/slipRange (speed, reverse, freeze aware).
+- `commands/clips.ts` (add, remove, move, split, update, link), `commands/trim.ts` (trim, rippleTrim, roll, slip, slide), `commands/range.ts` (insert, overwrite, lift, extract, rippleDelete), `commands/tracks.ts` (tracks, markers, sequence, media, project). Signature: `(project, ctx: {newId, seqId?}, args) => Command`.
+- `history.ts`: `History` (execute, undo, redo, groups, dirty, jumpTo, subscribe). `snap.ts`: pure snapping. `projectFile.ts`: `.cutline` JSON, schema 2, migrations, `normalize` fills defaults.
+- `invariants.ts`, `fuzz.ts` (random projects/commands), `testkit.ts`, `testrun.ts` (test helpers).
+
+## Edit rules
+- Move and overwrite replace what they land on. Ripple edits shift later clips on every unlocked track; a left shift is clamped by clips in the way. Linked clips follow unless `linked: false`; a linked partner on a locked track blocks the edit.

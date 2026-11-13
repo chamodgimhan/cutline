@@ -1,0 +1,27 @@
+{
+  "app": "cutline",
+  "version": 1,
+  "name": "Old holiday cut",
+  "media": [
+    { "id": "m1", "name": "beach.mp4", "path": "C:/footage/beach.mp4", "fingerprint": "a1b2", "duration": 7056000000, "width": 1920, "height": 1080, "fpsNum": 30000, "fpsDen": 1001, "hasAudio": true, "sampleRate": 48000, "channels": 2 },
+    { "id": "m2", "name": "voice.wav", "path": "C:/footage/voice.wav", "fingerprint": "c3d4", "duration": 3528000000, "width": 0, "height": 0, "hasAudio": true, "sampleRate": 44100, "channels": 1 }
+  ],
+  "sequence": {
+    "name": "Main",
+    "width": 1920,
+    "height": 1080,
+    "fpsNum": 30000,
+    "fpsDen": 1001,
+    "sampleRate": 48000,
+    "tracks": [
+      { "id": "v1", "type": "video", "name": "Video 1", "locked": false, "muted": false, "clips": [
+        { "id": "c1", "media": "m1", "start": 0, "in": 705600000, "out": 2116800000 },
+        { "id": "c2", "media": "m1", "start": 1411200000, "in": 3528000000, "out": 4233600000, "name": "Wave" }
+      ] },
+      { "id": "a1", "type": "audio", "name": "Audio 1", "locked": true, "muted": true, "clips": [
+        { "id": "c3", "media": "m2", "start": 0, "in": 0, "out": 2116800000 }
+      ] }
+    ],
+    "markers": [ { "id": "k1", "time": 705600000, "name": "Intro ends" } ]
+  }
+}

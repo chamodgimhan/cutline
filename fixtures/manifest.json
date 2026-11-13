@@ -1,0 +1,262 @@
+{
+ "clip_24": {
+  "file": "clip_24.mp4",
+  "bytes": 841665,
+  "sha256": "d3071497ce8dfffd222a8f6350bed44a74d975965abcc4d1d81cbd409dbe189a",
+  "spec": {
+   "name": "clip_24",
+   "width": 320,
+   "height": 180,
+   "fpsNum": 24,
+   "fpsDen": 1,
+   "seconds": 2,
+   "sampleRate": 48000,
+   "channels": 2,
+   "faststart": true,
+   "hashFrames": "few"
+  },
+  "frameCount": 48,
+  "audioFrames": 96000,
+  "frameHashes": {
+   "0": "8db8c149d4d224b8",
+   "1": "6b3061b14e1c7549",
+   "13": "f8540879a830ef2d",
+   "24": "0b9b18591cc6faf4",
+   "26": "6b27a8b1889f798d",
+   "39": "8eae15a9df39c6a1",
+   "47": "b4ddcb8971747e12"
+  }
+ },
+ "clip_25": {
+  "file": "clip_25.mp4",
+  "bytes": 855606,
+  "sha256": "0797feda52fcd4b9e4a137d50314a5761404fcd7b02c1a5cb0b008a8694e193f",
+  "spec": {
+   "name": "clip_25",
+   "width": 320,
+   "height": 180,
+   "fpsNum": 25,
+   "fpsDen": 1,
+   "seconds": 2,
+   "sampleRate": 48000,
+   "channels": 2,
+   "faststart": true,
+   "hashFrames": "few"
+  },
+  "frameCount": 50,
+  "audioFrames": 96000,
+  "frameHashes": {
+   "0": "8db8c149d4d224b8",
+   "1": "6b3061b14e1c7549",
+   "13": "f8540879a830ef2d",
+   "25": "472fd8d1651f4d19",
+   "26": "6b27a8b1889f798d",
+   "39": "8eae15a9df39c6a1",
+   "49": "ada6da71bd8dcd4e"
+  }
+ },
+ "clip_2997": {
+  "file": "clip_2997.mp4",
+  "bytes": 912179,
+  "sha256": "881e21c80b94fb60c08fabb23002dd62c57c00582296c70c0b9c2254ce84090b",
+  "spec": {
+   "name": "clip_2997",
+   "width": 320,
+   "height": 180,
+   "fpsNum": 30000,
+   "fpsDen": 1001,
+   "seconds": 2,
+   "sampleRate": 48000,
+   "channels": 2,
+   "faststart": true,
+   "hashFrames": "few"
+  },
+  "frameCount": 60,
+  "audioFrames": 96000,
+  "frameHashes": {
+   "0": "8db8c149d4d224b8",
+   "1": "6b3061b14e1c7549",
+   "13": "f8540879a830ef2d",
+   "26": "6b27a8b1889f798d",
+   "30": "0a099f09756adc80",
+   "39": "8eae15a9df39c6a1",
+   "52": "89294541ca4d7acf",
+   "59": "d694de1147c3f665"
+  }
+ },
+ "clip_60": {
+  "file": "clip_60.mp4",
+  "bytes": 1268991,
+  "sha256": "5d5392f894438b3622cc8b3b919578ba88658401ce1530b2af557548e6c83e1f",
+  "spec": {
+   "name": "clip_60",
+   "width": 320,
+   "height": 180,
+   "fpsNum": 60,
+   "fpsDen": 1,
+   "seconds": 2,
+   "sampleRate": 48000,
+   "channels": 2,
+   "faststart": true,
+   "hashFrames": "few"
+  },
+  "frameCount": 120,
+  "audioFrames": 96000,
+  "frameHashes": {
+   "0": "8db8c149d4d224b8",
+   "1": "6b3061b14e1c7549",
+   "13": "f8540879a830ef2d",
+   "26": "6b27a8b1889f798d",
+   "39": "8eae15a9df39c6a1",
+   "52": "89294541ca4d7acf",
+   "60": "060f17a1aa860687",
+   "65": "dc0fbbf19d4daf52",
+   "78": "3a975699842aace8",
+   "91": "febae2f1123ddc7e",
+   "104": "0f70a0593679288d",
+   "117": "01be14298c04fd9f",
+   "119": "a7589fe9e130045c"
+  }
+ },
+ "vfr": {
+  "file": "vfr.mp4",
+  "bytes": 959539,
+  "sha256": "1483ec6a4ee61bb2498215ea7f52e02b6c9fdf79a08273659964618a614a340e",
+  "spec": {
+   "name": "vfr",
+   "width": 320,
+   "height": 180,
+   "fpsNum": 0,
+   "fpsDen": 1,
+   "seconds": 2,
+   "sampleRate": 48000,
+   "channels": 2,
+   "faststart": true,
+   "hashFrames": "few",
+   "vfrCycleMs": [
+    33,
+    17,
+    50,
+    33,
+    67,
+    16,
+    34,
+    50
+   ]
+  },
+  "frameCount": 53,
+  "audioFrames": 96000,
+  "frameHashes": {
+   "0": "8db8c149d4d224b8",
+   "1": "6b3061b14e1c7549",
+   "13": "f8540879a830ef2d",
+   "26": "6b27a8b1889f798d",
+   "39": "8eae15a9df39c6a1",
+   "52": "89294541ca4d7acf"
+  }
+ },
+ "rotated": {
+  "file": "rotated.mp4",
+  "bytes": 912179,
+  "sha256": "1648bf8a00f1e3e22e1a06e418e9f38a0c010e6b88d11e1086f19e6c56fa255b",
+  "spec": {
+   "name": "rotated",
+   "width": 320,
+   "height": 180,
+   "fpsNum": 30,
+   "fpsDen": 1,
+   "seconds": 2,
+   "sampleRate": 48000,
+   "channels": 2,
+   "faststart": true,
+   "hashFrames": "few",
+   "rotation": 90
+  },
+  "frameCount": 60,
+  "audioFrames": 96000,
+  "frameHashes": {
+   "0": "8db8c149d4d224b8",
+   "1": "6b3061b14e1c7549",
+   "13": "f8540879a830ef2d",
+   "26": "6b27a8b1889f798d",
+   "30": "0a099f09756adc80",
+   "39": "8eae15a9df39c6a1",
+   "52": "89294541ca4d7acf",
+   "59": "d694de1147c3f665"
+  }
+ },
+ "hd_1080": {
+  "file": "hd_1080.mp4",
+  "bytes": 12509042,
+  "sha256": "571ef01e71e4759618b4c6f09902bf1e831f524c8da266431fb1d6999ee337e9",
+  "spec": {
+   "name": "hd_1080",
+   "width": 1920,
+   "height": 1080,
+   "fpsNum": 30,
+   "fpsDen": 1,
+   "seconds": 2,
+   "sampleRate": 48000,
+   "channels": 2,
+   "faststart": true,
+   "hashFrames": "few"
+  },
+  "frameCount": 60,
+  "audioFrames": 96000,
+  "frameHashes": {
+   "0": "1a0e8205d1ed1128",
+   "1": "43796e8590d0db2a",
+   "13": "50ecb70553ea68a6",
+   "26": "e26f61c554b79124",
+   "30": "e1f10f056c212166",
+   "39": "3d04b84549ee4a00",
+   "52": "1df4da452202a1d0",
+   "59": "fcb8c2c53c3231a5"
+  }
+ },
+ "long_2h": {
+  "file": "long_2h.mp4",
+  "bytes": 465508987,
+  "sha256": "41f7fab2c6c22e5f3ad3bdaebf252fea38e3d4beba6e86967b228d516acfdf47",
+  "spec": {
+   "name": "long_2h",
+   "width": 64,
+   "height": 48,
+   "fpsNum": 24,
+   "fpsDen": 1,
+   "seconds": 7200,
+   "sampleRate": 16000,
+   "channels": 1,
+   "faststart": false,
+   "hashFrames": "sparse"
+  },
+  "frameCount": 172800,
+  "audioFrames": 115200000,
+  "frameHashes": {
+   "0": "9f83aa49e4203723",
+   "10007": "b2a5bcd405381adb",
+   "20014": "2e0cd04a0f6987cd",
+   "30021": "9a2a52e735d5a1f9",
+   "40028": "129b7aabcabea599",
+   "50035": "3528dda1131d3f4e",
+   "60042": "0c43bb5706ff3139",
+   "70049": "0a63cf1877bb0780",
+   "80056": "53000d21c82058cc",
+   "90063": "9be676ddaea10e08",
+   "100070": "cedb9ab85e7be50a",
+   "110077": "dc179c9d6a759e41",
+   "120084": "2673b946235c239f",
+   "130091": "7973bac1f891638b",
+   "140098": "53b3dd8d400be7a8",
+   "150105": "ea958151d33e9da6",
+   "160112": "31cff00fec754bf8",
+   "170119": "7211970825bbecae",
+   "172799": "695bcee785c3399a"
+  }
+ },
+ "corrupt": {
+  "file": "corrupt.mp4",
+  "bytes": 4096,
+  "sha256": "9b01ec4fac32b731d19fc4dad620d3dc5dfb89b5e1de60bf3f18cae3efa9ccac"
+ }
+}

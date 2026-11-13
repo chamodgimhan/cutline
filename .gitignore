@@ -1,0 +1,8 @@
+node_modules/
+dist/
+fixtures/out/
+*.log
+.cache/
+keygen/private-key.*
+desktop/dist/
+desktop/node_modules/

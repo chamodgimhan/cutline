@@ -1,0 +1,29 @@
+{
+  "name": "cutline",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cutline: desktop video clipping editor",
+  "author": "Chamod Gimhan",
+  "license": "UNLICENSED",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --quiet",
+    "test": "vitest run --silent --reporter=dot",
+    "verify": "tsc --noEmit && eslint . --quiet && vitest run --silent --reporter=dot",
+    "fixtures": "node tools/fixtures/generate.ts",
+    "smoke": "node tools/smoke/run.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.6.6",
+    "eslint": "^10.14.0",
+    "playwright-core": "^1.65.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0"
+  }
+}

@@ -1,6 +1,7 @@
 // CLI: node tools/smoke/run.ts [suite ...]   Runs browser smoke suites, prints failures only.
 const SUITES: Record<string, () => Promise<{ run: () => Promise<string[]> }>> = {
   phase0: () => import('./phase0.ts'),
+  phase2: () => import('./phase2.ts'),
 };
 
 export {};

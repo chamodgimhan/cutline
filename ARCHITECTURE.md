@@ -4,10 +4,11 @@
 - `src/theme/theme.ts`: every colour, spacing step, type size. UI reads CSS variables from `themeCssVariables()`.
 - `src/core/`: pure editing logic (model, time, commands, history, snapping, project file). No DOM, no node, no UI imports (lint-enforced).
 - `src/media/`: container code, pure TS. `bytes.ts` (ByteWriter, BitWriter, BitReader, hashBytes), `mp4/boxes.ts`, `mp4/muxer.ts`.
-- `src/engine/`: browser engine (WebCodecs decode/encode, compositor, audio). Not yet created.
+- `src/media/` also: `source.ts` (ByteSource, MediaError, fingerprint), `mp4/parse.ts` + `mp4/demuxer.ts` (Mp4File, sampleAtTime, keyBefore), `pcm.ts`, `probe.ts`, `library.ts` (MediaLibrary: online/offline, relink), `peaks.ts` (PeakBuilder, ByteCache).
+- `src/engine/`: browser only. `videoSource.ts` (frame(index)/frameAt(tick), caller closes frames), `audioSource.ts` (read(first, count) floats), `mediaWorker.ts` + `mediaJobs.ts` (peaks, thumbs), `sourceSpec.ts`, `draw2d.ts`.
 - `src/ui/`: panels and tools. Not yet created.
 - `tools/fixtures/`: test media generator (never shipped). `h264pcm.ts` lossless H.264 (I_PCM + P_Skip), `frame.ts` test picture + counter reader, `build.ts` specs, `generate.ts` CLI.
-- `tools/smoke/`: headless Chrome suites through playwright-core and the system Chrome. `run.ts` CLI, one file per phase.
+- `tools/smoke/`: headless Chrome suites (playwright-core + system Chrome). `run.ts` CLI, `server.ts` (Vite dev server + harness page), `phaseN.ts` node side, `page/phaseN.page.ts` page side exposed as `window.T`.
 - `fixtures/manifest.json`: committed sizes, sha256 and frame hashes. `fixtures/out/` is generated and git-ignored.
 
 ## Conventions

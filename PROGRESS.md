@@ -1,15 +1,19 @@
 # Cutline progress
 
 ## Phase
-Phase 2: Media import and decode (starting)
+Phase 3: Compositor and playback (starting)
 
 ## Done
 - Setup: CLAUDE.md, SPEC.md, git.
 - Phase 0: scaffold, verify, theme, fixture generator (9 fixtures, byte-identical), phase0 smoke (lossless decode in Chrome).
 - Phase 1: time, model, commands (27 kinds), history, snapping, project file + v1 migration. 100 unit tests; property test 10,000 sequences x 12 steps green.
+- Phase 2: MP4/MOV demuxer, probe (fps, VFR, rotation, WAV, images), fingerprint, MediaLibrary (offline/relink), VideoSource (WebCodecs, bounded cache), AudioSource (PCM + WebCodecs), media worker (peaks, thumbnails). 118 unit tests; phase2 smoke green.
 
 ## Next step
-Phase 2 step 1: `src/media/mp4/demuxer.ts` (pure TS, range-read source, sample tables, edit lists, rotation, VFR detection) with node tests against fixtures. Then probe, WebCodecs decoder with bounded cache (`src/engine/`), PCM/WebCodecs audio decode, thumbnails/peaks worker, media library with fingerprint + relink, phase2 smoke.
+Phase 3 step 1: pure render plan in `src/core/render/` (which clips at a tick, transform matrix, fit, crop, opacity, blend) with tests; then `src/engine/compositor` (WebGL2 + Canvas 2D fallback), `renderFrame(project, tick)`, audio-clock transport (play, pause, JKL, step, loop, quality), source/program monitors, phase3 smoke (render hashes, drift, fps, scrub).
+
+## Budgets measured
+- 2h open: node 125 ms / 1 MB of 444 MB read; browser ~50 ms. 1080p scrub worst 124 ms (limit 150), mean ~80 ms.
 
 ## Environment (Phase 0)
 - Installed: node 22.22.1, npm 11.12.1, git 2.53, Python 3.14, Chrome and Edge (system). npm registry reachable.
@@ -32,3 +36,7 @@ None.
 - Ripple edits do not move markers or locked tracks.
 - Project keeps a `sequences` array, UI edits the active one (nested sequences out of scope).
 - Media list is kept sorted by id so undo restores exact order.
+- Decoder runs with optimizeForLatency; cached frames are copied out of the decoder pool. Seeks decode the GOP and keep only the last 6 frames before the target.
+- Import formats v1: MP4/MOV/M4A (H.264, HEVC, VP9, AV1, AAC, MP3, Opus, FLAC, PCM as the machine supports), WAV, PNG/JPEG/WebP. WebM/MKV import refused with a plain message.
+- Picker and drag-and-drop UI arrive with the media bin (Phase 4); both call MediaLibrary.importSource, tested in Phase 2.
+- Workers get media through a SourceSpec (Blob, or URL with range requests for the desktop file protocol).

@@ -42,3 +42,8 @@
 
 ## Edit rules
 - Move and overwrite replace what they land on. Ripple edits shift later clips on every unlocked track; a left shift is clamped by clips in the way. Linked clips follow unless `linked: false`; a linked partner on a locked track blocks the edit.
+
+## Desktop shell
+- `desktop/main.cjs` (Electron main): serves the built app from `desktop/app` at `app://cutline/`, media byte ranges at `app://cutline/__media__/<encoded path>` (allow-list filled by `media:info`), blocks every other request, native menus send action ids to the page.
+- `desktop/preload.cjs` exposes `window.cutlineDesktop`; `src/ui/desktop.ts` plugs it into App (project files, media paths, close prompt).
+- `node desktop/build.mjs` builds installers into `desktop/dist`; `keygen/` is never packaged.

@@ -3,6 +3,7 @@ import type { Action } from '../core/editor/actions.ts';
 import { parseProject, ProjectFileError, serializeProject } from '../core/projectFile.ts';
 import { addRecent, ErrorLog, type LogEntry, type Recent, type Recovery } from '../core/projectState.ts';
 import { newProject, type App } from './app.ts';
+import type { ProjectHooks } from './desktop.ts';
 import { h } from './dom.ts';
 import { kv } from './storage.ts';
 import { saveTextFile } from './textUi.ts';
@@ -31,7 +32,7 @@ export function ask(title: string, message: string, buttons: string[], extra: HT
 
 const fileName = (name: string): string => `${name.replace(/\.cutline$/i, '') || 'Untitled'}.cutline`;
 
-export async function installProject(app: App): Promise<Action[]> {
+export async function installProject(app: App): Promise<{ actions: Action[]; hooks: ProjectHooks }> {
   const s = app.session;
   app.log = new ErrorLog((await kv.get<LogEntry[]>('log')) ?? []);
   app.log.onChange = (entries) => void kv.set('log', entries.slice());
@@ -60,6 +61,7 @@ export async function installProject(app: App): Promise<Action[]> {
     }
     await remember(name, ref);
     if (!dirty) await kv.del('recovery');
+    await app.resolveMedia?.();
     const offline = s.project.media.filter((m) => app.library.status(m.id) === 'offline').length;
     if (offline) s.notify(`${offline} media file${offline === 1 ? ' is' : 's are'} offline. Import the files again, or use Relink in the media bin.`);
     return true;
@@ -158,8 +160,16 @@ export async function installProject(app: App): Promise<Action[]> {
     else await kv.del('recovery');
   }
 
+  const openRef = async (ref: string): Promise<void> => {
+    try {
+      const f = await app.files.openRef(ref);
+      await load(f.text, f.name, f.ref);
+    } catch (e) {
+      fail('That project could not be opened. It may have been moved or deleted.', e);
+    }
+  };
   const later = (job: () => Promise<unknown>) => (): void => void job().catch((e: unknown) => fail('That did not work. Your project is unchanged.', e));
-  return [
+  const actions: Action[] = [
     { id: 'file.new', label: 'New Project', menu: 'File', keys: ['Ctrl+Alt+N'], run: later(async () => (await mayDiscard()) && load(serializeProject(newProject()), 'Untitled', null)) },
     { id: 'file.open', label: 'Open Project…', menu: 'File', keys: ['Ctrl+O'], run: later(async () => {
       if (!(await mayDiscard())) return;
@@ -171,4 +181,5 @@ export async function installProject(app: App): Promise<Action[]> {
     { id: 'file.saveAs', label: 'Save As…', menu: 'File', keys: ['Ctrl+Shift+S'], run: later(saveAs) },
     { id: 'help.exportLog', label: 'Export Error Log', menu: 'Help', keys: [], run: () => saveTextFile('cutline-log.txt', app.log.toText()) },
   ];
+  return { actions, hooks: { mayDiscard, openRef } };
 }

@@ -45,6 +45,11 @@ export class App {
   readonly source: MonitorEngine;
   /** Every action: the core registry plus ones that need the window (dialogs), which the UI adds. */
   readonly actions: Action[] = [...ACTIONS];
+  /** Where a file lives, for the project's media list: its name in a browser, its full path on desktop. */
+  pathOf: (file: File) => string = (file) => file.name;
+  /** Set on desktop: after a project is opened, reconnect media that is still at its recorded path. */
+  resolveMedia: (() => Promise<void>) | null = null;
+  private readonly urls = new Map<Id, { url: string; size: number }>();
   /** Licence state, read from storage at start-up and changed in the About and Licence dialog. */
   license: LicenseStatus = { state: 'none' };
   /** Project file access. The desktop shell swaps in native dialogs. */
@@ -102,6 +107,7 @@ export class App {
     this.library.clear();
     this.media.dispose();
     this.blobs.clear();
+    this.urls.clear();
     this.sourceProj = null;
     this.session.selection.clear();
     this.session.source = { mediaId: null, inPoint: null, outPoint: null, playhead: 0 };
@@ -172,8 +178,17 @@ export class App {
 
   /** Where the worker can read a media file from, or null when it is offline. */
   spec(asset: MediaAsset): SourceSpec | null {
+    if (this.library.status(asset.id) !== 'online') return null;
     const blob = this.blobs.get(asset.id);
-    return blob && this.library.status(asset.id) === 'online' ? { kind: 'blob', blob } : null;
+    const url = this.urls.get(asset.id);
+    return blob ? { kind: 'blob', blob } : url ? { kind: 'url', ...url } : null;
+  }
+
+  /** Note that an asset is read from a URL the shell serves (desktop), so workers can read it too. */
+  attachUrl(id: Id, url: string, size: number): void {
+    this.urls.set(id, { url, size });
+    this.blobs.delete(id);
+    this.session.emit();
   }
 
   /** Import files chosen in the picker or dropped on the bin. Each failure is reported; the rest still import. */
@@ -183,7 +198,7 @@ export class App {
     for (const file of files) {
       const id = this.session.newId();
       try {
-        const path = (file as File & { path?: string }).path || file.name;
+        const path = this.pathOf(file);
         // A file that is the content of an offline asset brings that asset back instead of being added twice.
         const fp = await fingerprint(new BlobSource(file));
         const missing = this.session.project.media.find((m) => m.fingerprint === fp && this.library.status(m.id) === 'offline');
@@ -207,7 +222,7 @@ export class App {
     const asset = getMedia(this.session.project, mediaId);
     if (!asset) return false;
     try {
-      const path = (file as File & { path?: string }).path || file.name;
+      const path = this.pathOf(file);
       const change = await this.library.relink(asset, new BlobSource(file), path, force);
       try {
         this.session.history.execute(updateMedia(this.session.project, this.session.ctx, mediaId, change));
@@ -216,6 +231,7 @@ export class App {
         throw e;
       }
       this.blobs.set(mediaId, file);
+      this.urls.delete(mediaId);
       return true;
     } catch (e) {
       if (!(e instanceof MediaError) && !(e instanceof EditError)) throw e;

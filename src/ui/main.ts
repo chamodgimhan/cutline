@@ -4,6 +4,7 @@ import { App } from './app.ts';
 import { audioActions } from './audioActions.ts';
 import { binPanel } from './bin.ts';
 import { h, load, save } from './dom.ts';
+import { installDesktop } from './desktop.ts';
 import { openExportDialog } from './exportDialog.ts';
 import { inspectorPanel } from './inspector.ts';
 import { menuBar } from './menus.ts';
@@ -31,7 +32,10 @@ export function mount(root: HTMLElement): App {
   const app = new App();
   app.actions.push(...audioActions(app));
   app.actions.push(...captionActions(app, app.speech));
-  void installProject(app).then((actions) => app.actions.unshift(...actions));
+  void installProject(app).then(({ actions, hooks }) => {
+    app.actions.unshift(...actions);
+    installDesktop(app, hooks);
+  });
   void loadLicense(app);
   app.actions.push(...aboutActions(app));
   app.actions.push({ id: 'file.export', label: 'Export…', menu: 'File', keys: ['Ctrl+E'], run: () => openExportDialog(app) });

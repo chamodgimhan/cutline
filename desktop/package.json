@@ -1,0 +1,88 @@
+{
+  "name": "cutline-desktop",
+  "productName": "Cutline",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cutline: desktop video clipping editor",
+  "author": "Chamod Gimhan",
+  "license": "UNLICENSED",
+  "main": "main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis portable",
+    "dist:mac": "electron-builder --mac",
+    "dist:linux": "electron-builder --linux"
+  },
+  "build": {
+    "appId": "com.chamodgimhan.cutline",
+    "productName": "Cutline",
+    "copyright": "Copyright (c) 2026 Chamod Gimhan. All rights reserved.",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "icon.png",
+      "app/**/*"
+    ],
+    "extraFiles": [
+      {
+        "from": "../LICENSE",
+        "to": "LICENSE.txt"
+      },
+      {
+        "from": "../EULA.txt",
+        "to": "EULA.txt"
+      },
+      {
+        "from": "../THIRD_PARTY_LICENSES.txt",
+        "to": "THIRD_PARTY_LICENSES.txt"
+      }
+    ],
+    "fileAssociations": [
+      {
+        "ext": "cutline",
+        "name": "Cutline Project",
+        "description": "Cutline project",
+        "role": "Editor"
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "license": "../EULA.txt",
+      "artifactName": "Cutline-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "Cutline-Portable-${version}.${ext}"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.video",
+      "icon": "icon.png"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "AudioVideo",
+      "icon": "icon.png",
+      "maintainer": "Chamod Gimhan"
+    }
+  },
+  "devDependencies": {
+    "electron": "^45.3.2",
+    "electron-builder": "^26.18.0"
+  }
+}

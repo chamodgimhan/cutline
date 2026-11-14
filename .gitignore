@@ -6,3 +6,4 @@ fixtures/out/
 keygen/private-key.*
 desktop/dist/
 desktop/node_modules/
+desktop/app/

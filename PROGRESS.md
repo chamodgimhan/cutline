@@ -1,16 +1,17 @@
 # Cutline progress
 
 ## Phase
-Phase 9: Project safety (starting)
+Phase 10: Desktop app and licensing (starting)
 
 ## Done
-- Phases 0-8 complete and committed: scaffold + fixtures; core model/commands/history; demux + decode; compositor + transport; editing UI; audio; effects/transitions/speed/keyframes; titles + captions (SRT/VTT, cue rules, burn-in, bundled Roboto fonts); export (MP4, WebM, PNG, WAV, presets, batch, reframe, queue, dialog).
-- 220 unit tests; smoke suites phase0, phase2-phase8 green; drift (10 min) green.
+- Phases 0-9 complete and committed: scaffold + fixtures; core model/commands/history; demux + decode; compositor + transport; editing UI; audio; effects/transitions/speed/keyframes; titles + captions (SRT/VTT, cue rules, burn-in, bundled Roboto fonts); export (MP4, WebM, PNG, WAV, presets, batch, reframe, queue, dialog); project safety (save/open/recent, autosave + crash recovery, error log, cache limits).
+- 223 unit tests; smoke suites phase0, phase2-phase9 green; drift (10 min) green.
 
 ## Next step
-Read RESUME.md first. Phase 9 (Project safety): File menu actions save, save as, open, new, recent projects, unsaved-changes prompt (History.dirty exists); autosave every 60 s to a recovery file and crash recovery on next launch; cache size limits with eviction (ByteCache in src/media/peaks.ts is already bounded; add a persistent store if needed and a soak check that it never exceeds its limit); error log the user can export. Storage on web: File System Access handles for project files, IndexedDB/OPFS for recovery + recents; Phase 10 swaps in native dialogs through the preload API. Done when: kill mid-edit + relaunch restores the work (test); a project with offline media opens and relinks; cache never exceeds its limit in the soak test.
+Read RESUME.md first. Phase 10: (1) licensing, pure: src/core/license.ts (Ed25519 verify via WebCrypto, key = base64url payload + signature; payload name/edition/issued/expiry/product), keygen/ tool (node, private key git-ignored), tests for valid/tampered/expired/wrong-product/malformed; watermark on exports without a valid key (frame-hash test for presence/absence); About and Licence dialog (activate, deactivate, status). (2) LICENSE (proprietary, (c) Chamod Gimhan), EULA.txt, generated THIRD_PARTY_LICENSES.txt, licence audit test failing on GPL/AGPL/unknown. (3) desktop/: Electron main (context isolation, no node integration, narrow preload API, native dialogs through app.files / app.exportDestination, .cutline association, menus, window state, single instance, CSP blocking network, cutline-media protocol for range reads via UrlSource), electron-builder config (Windows installer + portable, mac/linux targets), original icon, one-click build script. (4) zero-network-requests test for a full session; try to install Electron and build; if the runtime cannot be downloaded, record that the installer was not built or tested here.
 
 ## Budgets measured
+- Caches: 400 random frames over 8 files held at most 6 decoders and 72 MiB of frames (limit 384 MiB).
 - Export: 10 min (14,400 frames, 64x48) in ~55 s, page heap flat (18 -> 23 MiB); MP4 and WebM 40.7-41.0 dB vs preview; audio click exactly on its sample; batch of 20 valid files.
 - Audio: mixdown within 0.001 LSB of an independent calculation; largest step at a cut 0.032 (unfaded 0.244); after 50 edits clicks within 0.042 ms of their frame; fixture loudness -14.28 LUFS (reference -14.29).
 - Timeline with 2,000 clips: worst frame 24 ms, median 6 ms while scrolling (limit 32); paint script 1.3 ms.
@@ -55,3 +56,4 @@ Read RESUME.md first. Phase 9 (Project safety): File menu actions save, save as,
 - Fonts: Roboto and Roboto Mono are OFL-1.1, Roboto Slab is Apache-2.0; files and licences vendored in assets/fonts (not npm dependencies). VTT cue settings and names are not kept on import.
 - Export converts RGB to I420 (BT.709 limited) itself and writes colr / WebM Colour: this machine's H.264 encoder, given RGB, used BT.601 full range but labelled the stream BT.709 limited (30 dB vs preview; 41 dB after). Video is constant-quality (quantizer) where the encoder supports it. Audio is mixed on the main thread and sent to the export worker (no Web Audio in workers).
 - Exporting to another shape shows the centre of the sequence (cover); clip.reframe pans/zooms per clip; titles and captions are re-laid-out for the new width.
+- Project files on the web go through File System Access (fallback: upload/download); recovery, recents and the error log live in IndexedDB. Importing a file whose content matches an offline asset relinks it. No persistent thumbnail/peak cache: all caches are in memory and bounded.

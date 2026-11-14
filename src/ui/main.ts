@@ -7,6 +7,7 @@ import { openExportDialog } from './exportDialog.ts';
 import { inspectorPanel } from './inspector.ts';
 import { menuBar } from './menus.ts';
 import { monitorPanel } from './monitor.ts';
+import { installProject } from './projectActions.ts';
 import { historyPanel, metersPanel, openShortcutEditor } from './sidePanels.ts';
 import { installStyles } from './styles.ts';
 import { captionActions } from './textUi.ts';
@@ -29,6 +30,7 @@ export function mount(root: HTMLElement): App {
   const app = new App();
   app.actions.push(...audioActions(app));
   app.actions.push(...captionActions(app, app.speech));
+  void installProject(app).then((actions) => app.actions.unshift(...actions));
   app.actions.push({ id: 'file.export', label: 'Export…', menu: 'File', keys: ['Ctrl+E'], run: () => openExportDialog(app) });
   app.actions.push({ id: 'help.shortcuts', label: 'Keyboard Shortcuts…', menu: 'Help', keys: ['Ctrl+Alt+K'], run: () => openShortcutEditor(app) });
 

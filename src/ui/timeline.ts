@@ -98,6 +98,8 @@ export function timelinePanel(app: App): { body: HTMLElement; stats: TimelineSta
     return hitTest(s.seq, s.view, e.clientX - r.left, e.clientY - r.top, METRICS);
   };
 
+  // Reaching the timeline by keyboard makes it the target of playback and marking keys, as clicking it does.
+  canvas.addEventListener('focus', () => (s.focus = 'timeline'));
   canvas.addEventListener('pointerdown', (e) => {
     if (e.button !== 0) return;
     s.focus = 'timeline';

@@ -16,7 +16,10 @@ import type { SourceSpec } from '../engine/sourceSpec.ts';
 import { Transport } from '../engine/transport.ts';
 import { MediaLibrary } from '../media/library.ts';
 import { BlobSource, MediaError } from '../media/source.ts';
+import { ErrorLog } from '../core/projectState.ts';
+import { fingerprint } from '../media/source.ts';
 import { load, save } from './dom.ts';
+import { webProjectFiles, type ProjectFiles } from './storage.ts';
 
 export function newProject(): Project {
   const seq = makeSequence('seq1');
@@ -41,6 +44,15 @@ export class App {
   readonly source: MonitorEngine;
   /** Every action: the core registry plus ones that need the window (dialogs), which the UI adds. */
   readonly actions: Action[] = [...ACTIONS];
+  /** Project file access. The desktop shell swaps in native dialogs. */
+  files: ProjectFiles = webProjectFiles;
+  /** The file the open project was loaded from or saved to, if any. */
+  fileRef: string | null = null;
+  log = new ErrorLog();
+  /** Milliseconds between autosaves of unsaved work. */
+  autosaveMs = 60_000;
+  /** Set when the window is being closed on purpose (the shell has already asked about unsaved changes). */
+  skipUnloadPrompt = false;
   /** Speech-to-text provider. None ships with Cutline; an integrator sets one before the window is built. */
   speech: SpeechProvider | null = null;
   /** Id of the last action run, however it was triggered. */
@@ -78,6 +90,22 @@ export class App {
     if (!asset) return newProject();
     if (this.sourceProj?.id !== asset.id || this.sourceProj.project.media[0] !== asset) this.sourceProj = { id: asset.id, project: sourceProject(asset) };
     return this.sourceProj.project;
+  }
+
+  /** Replace the open project (new, open, recover). Media starts offline until its files are found again. */
+  loadProject(project: Project, dirty = false): void {
+    this.program.transport.pause();
+    this.source.transport.pause();
+    this.library.clear();
+    this.media.dispose();
+    this.blobs.clear();
+    this.sourceProj = null;
+    this.session.selection.clear();
+    this.session.source = { mediaId: null, inPoint: null, outPoint: null, playhead: 0 };
+    this.session.activeTrackId = null;
+    this.session.clipboard = null;
+    this.session.history.reset(project, dirty);
+    this.program.transport.seek(0);
   }
 
   /** Show a media file in the source monitor. */
@@ -153,6 +181,13 @@ export class App {
       const id = this.session.newId();
       try {
         const path = (file as File & { path?: string }).path || file.name;
+        // A file that is the content of an offline asset brings that asset back instead of being added twice.
+        const fp = await fingerprint(new BlobSource(file));
+        const missing = this.session.project.media.find((m) => m.fingerprint === fp && this.library.status(m.id) === 'offline');
+        if (missing) {
+          await this.relink(missing.id, file);
+          continue;
+        }
         assets.push(await importMedia(this.library, this.media, new BlobSource(file), id, file.name, path));
         this.blobs.set(id, file);
       } catch (e) {

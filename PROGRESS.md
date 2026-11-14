@@ -1,20 +1,14 @@
 # Cutline progress
 
 ## Phase
-Phase 7: Titles and captions (starting)
+Phase 8: Export (starting)
 
 ## Done
-- Setup: CLAUDE.md, SPEC.md, git.
-- Phase 0: scaffold, verify, theme, fixture generator (9 fixtures, byte-identical), phase0 smoke (lossless decode in Chrome).
-- Phase 1: time, model, commands (27 kinds), history, snapping, project file + v1 migration. 100 unit tests; property test 10,000 sequences x 12 steps green.
-- Phase 2: MP4/MOV demuxer, probe (fps, VFR, rotation, WAV, images), fingerprint, MediaLibrary (offline/relink), VideoSource (WebCodecs, bounded cache), AudioSource (PCM + WebCodecs), media worker (peaks, thumbnails). 118 unit tests; phase2 smoke green.
-- Phase 3: keyframes, render plan, WebGL2 compositor + Canvas 2D fallback, renderFrame, renderAudio (OfflineAudioContext), audio-clock Transport (play, pause, JKL, step, loop, quality), sourceProject for the source monitor. 140 unit tests; phase3 smoke and 10-minute drift green. Reviewed and audited 2026-11-14.
-- Phase 4: editor Session, 62 actions + shortcut map, timeline layout + tool gestures (pure, tested); UI in src/ui (no framework): menus, resizable panels, bin with picker/drag-drop import, source/program monitors, canvas timeline, inspector, meters, history, shortcut editor. 172 unit tests; phase4 smoke green.
-- Phase 5: clip gain, fades, keyframed gain, track volume/pan, automatic 128-sample edit crossfade, LUFS meter (BS.1770), normalise, exact peak meters, audio scrub, inspector audio fields. 181 unit tests; phase5 smoke green.
-- Phase 6: 11 effects (GL passes, ordered stacks), adjustment clips, 5 video transitions + audio crossfade, speed/reverse/freeze/pitch keep (WSOLA), keyframe lane + inspector sections. 197 unit tests; phase6 smoke green (25 stored hashes in fixtures/effect-hashes.json).
+- Phases 0-7 complete and committed: scaffold + fixtures; core model/commands/history; demux + decode; compositor + transport; editing UI; audio; effects/transitions/speed/keyframes; titles + captions (SRT/VTT, cue rules, burn-in, bundled Roboto fonts).
+- 209 unit tests; smoke suites phase0, phase2-phase7 green; drift (10 min) green.
 
 ## Next step
-Read RESUME.md first. Phase 7 step 1: pure caption code in src/core/captions.ts (SRT + VTT parse/serialise incl. malformed input, cue rules: no overlap, minimum duration, split, merge, shift) with tests; then text rendering (OffscreenCanvas 2D -> layer image for kind 'text' and burned-in captions; bundled open-licence fonts under assets/fonts with licence files), text/caption inspector fields, caption track editing on the timeline (cues are clips of kind 'caption'), SRT/VTT import/export actions, speech-to-text provider interface (control hidden with no provider), phase7 smoke (burned-in caption frame hashes). Compositor already accepts kind 'text' layers via the images map; planFrame must add caption layers when burn-in is on. Carry-over for Phase 8: exported AAC needs its encoder delay removed or signalled; an imported AAC file without an edit list plays about 44 ms late.
+Read RESUME.md first. Phase 8 (Export) step 1: WebM muxer (VP9 + Opus) as a tested pure module in src/media/webm/, plus AAC priming handling in the MP4 muxer (edit list) so audio starts in sync; then export engine in a worker (src/engine/export/): frames from Renderer.renderFrame on an OffscreenCanvas -> VideoEncoder, audio from renderAudio -> AudioEncoder, codec support via isConfigSupported (never offer what the machine cannot encode), presets (1080p, 4K, vertical 1080x1920, square, custom), ranges (whole, in/out, each selected clip or marker range = batch), per-clip reframe for vertical, PNG frame + WAV, progress/ETA/cancel/queue, streaming to disk (File System Access handle on web; memory fallback), export dialog UI; phase8 smoke (encoder input == renderFrame, PSNR >= 40 dB vs preview, re-probe duration/frame count/sync, cancel leaves no file, 10-min export memory bound, batch of 20). Needs a WebM demuxer or probe to re-read exports; MP4 exports re-read with the existing demuxer.
 
 ## Budgets measured
 - Audio: mixdown within 0.001 LSB of an independent calculation; largest step at a cut 0.032 (unfaded 0.244); after 50 edits clicks within 0.042 ms of their frame; fixture loudness -14.28 LUFS (reference -14.29).
@@ -57,3 +51,4 @@ Read RESUME.md first. Phase 7 step 1: pure caption code in src/core/captions.ts 
 - Transitions start at the cut: the outgoing clip runs on into its handle (or holds its last frame) under the incoming one. Canvas 2D fallback draws only exposure/contrast/saturation/blur/flip and shows every transition as a dissolve.
 - Pitch keep stretches each 0.4 s audio chunk on its own (marked `shortcut:` in audioRender.ts).
 - The inspector rebuilds on change and restores focus and uncommitted text.
+- Fonts: Roboto and Roboto Mono are OFL-1.1, Roboto Slab is Apache-2.0; files and licences vendored in assets/fonts (not npm dependencies). VTT cue settings and names are not kept on import.

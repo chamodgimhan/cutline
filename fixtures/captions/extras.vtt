@@ -1,0 +1,15 @@
+WEBVTT - with a title
+Kind: captions
+
+NOTE this block is a comment
+spanning lines
+
+STYLE
+::cue { color: lime }
+
+intro
+00:01.000 --> 00:02.000 line:0 position:20% align:start
+<v Speaker>Voice tag kept.
+
+00:00:02.000 --> 00:00:03.000
+Plain cue.

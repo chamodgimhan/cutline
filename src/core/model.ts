@@ -75,6 +75,8 @@ export interface TextProps {
   boxPadding: number;
   align: 'left' | 'center' | 'right';
   valign: 'top' | 'middle' | 'bottom';
+  /** Safe margin kept clear on every side, as a fraction of the frame. */
+  margin: number;
 }
 
 export interface Effect {
@@ -175,9 +177,9 @@ export const defaultVideoProps = (): VideoProps => ({
 export const defaultAudioProps = (): AudioProps => ({ gain: 0, fadeIn: 0, fadeOut: 0 });
 
 export const defaultTextProps = (text = ''): TextProps => ({
-  text, font: 'Inter', size: 64, weight: 600, color: '#ffffff', strokeColor: '#000000', strokeWidth: 0,
+  text, font: 'Roboto', size: 64, weight: 600, color: '#ffffff', strokeColor: '#000000', strokeWidth: 0,
   shadowColor: '#00000000', shadowBlur: 0, shadowX: 0, shadowY: 0, boxColor: '#00000000', boxPadding: 12,
-  align: 'center', valign: 'middle',
+  align: 'center', valign: 'middle', margin: 0.05,
 });
 
 export function makeClip(init: Pick<Clip, 'id' | 'kind' | 'start' | 'duration'> & Partial<Clip>): Clip {
@@ -190,6 +192,8 @@ export function makeClip(init: Pick<Clip, 'id' | 'kind' | 'start' | 'duration'> 
     text: k === 'text' || k === 'caption' ? defaultTextProps() : null,
     effects: [], transitionIn: null, transitionOut: null,
     ...init,
+    // Older files may lack text fields added since: fill them in.
+    ...(init.text ? { text: { ...defaultTextProps(), ...init.text } } : {}),
   };
 }
 

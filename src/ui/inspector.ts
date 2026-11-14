@@ -8,6 +8,7 @@ import { formatTimecode, TICKS_PER_SECOND } from '../core/time.ts';
 import type { App } from './app.ts';
 import { fill, framed, h } from './dom.ts';
 import { fxFields } from './inspectorFx.ts';
+import { textFields } from './textUi.ts';
 
 const BLENDS: BlendMode[] = ['normal', 'multiply', 'screen', 'overlay', 'add', 'darken', 'lighten', 'difference'];
 const FITS: FitMode[] = ['fit', 'fill', 'stretch', 'none'];
@@ -80,7 +81,7 @@ export function inspectorPanel(app: App): HTMLElement {
         ...row('Track pan', number(track.pan, (v) => void s.run(() => setTrackProps(s.project, s.ctx, track.id, { pan: Math.min(1, Math.max(-1, v)) })), 0.1)),
       );
     }
-    out.push(...fxFields(app, c));
+    out.push(...textFields(app, c), ...fxFields(app, c));
     return out;
   }
 
@@ -105,14 +106,14 @@ export function inspectorPanel(app: App): HTMLElement {
     const hits = s.selectedClips();
     const one = hits.length === 1 ? hits[0]?.clip : undefined;
     // Rebuild only when what is shown changes, and never under the user's cursor while typing.
-    const sig = one ? `${one.id}:${JSON.stringify([one.name, one.enabled, one.start, one.duration, one.video, one.audio, one.effects, one.transitionIn, one.transitionOut, one.speed, one.reverse, one.pitchKeep, s.laneKey, s.seq.tracks.map((t) => [t.volume, t.pan])])}:${JSON.stringify([one.video, one.audio, one.effects]).includes('"keys"') ? s.playhead : ''}` : `${hits.length}:${JSON.stringify([s.seq.name, s.seq.width, s.seq.height, s.seq.fps, s.seq.sampleRate])}`;
+    const sig = one ? `${one.id}:${JSON.stringify([one.name, one.enabled, one.start, one.duration, one.video, one.audio, one.text, one.effects, one.transitionIn, one.transitionOut, one.speed, one.reverse, one.pitchKeep, s.laneKey, s.seq.tracks.map((t) => [t.volume, t.pan])])}:${JSON.stringify([one.video, one.audio, one.effects]).includes('"keys"') ? s.playhead : ''}` : `${hits.length}:${JSON.stringify([s.seq.name, s.seq.width, s.seq.height, s.seq.fps, s.seq.sampleRate])}`;
     if (sig === shown) return;
     shown = sig;
     // Rebuilding must not disturb typing: keep focus on the same field, and keep text the user has not committed yet.
     const active = root.contains(document.activeElement) ? (document.activeElement as HTMLInputElement) : null;
     const typed = active && isTypingTarget(active) && active.dataset.built !== undefined && active.value !== active.dataset.built ? active.value : null;
     fill(root, ...(one ? clipFields(one) : hits.length > 1 ? [h('div', { class: 'none' }, `${hits.length} clips selected.`)] : sequenceFields()));
-    for (const el of root.querySelectorAll('input')) el.dataset.built = el.value;
+    for (const el of root.querySelectorAll<HTMLInputElement>('input, textarea')) el.dataset.built = el.value;
     const again = active?.id ? root.querySelector<HTMLInputElement>(`#${CSS.escape(active.id)}`) : null;
     if (again) {
       again.focus();
@@ -123,7 +124,7 @@ export function inspectorPanel(app: App): HTMLElement {
   // commit it ourselves when the user leaves the field or presses Enter.
   const commit = (e: Event): void => {
     const el = e.target as HTMLInputElement;
-    if (el.tagName === 'INPUT' && el.dataset.built !== undefined && el.value !== el.dataset.built) el.dispatchEvent(new Event('change', { bubbles: true }));
+    if ((el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') && el.dataset.built !== undefined && el.value !== el.dataset.built) el.dispatchEvent(new Event('change', { bubbles: true }));
   };
   root.addEventListener('focusout', commit);
   root.addEventListener('keydown', (e) => e.key === 'Enter' && commit(e));

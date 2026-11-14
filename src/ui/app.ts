@@ -2,6 +2,7 @@
 import { ACTIONS, type Action } from '../core/editor/actions.ts';
 import { Session } from '../core/editor/session.ts';
 import { comboOf, isTypingTarget, ShortcutMap, type Overrides } from '../core/editor/shortcuts.ts';
+import type { SpeechProvider } from '../core/captions.ts';
 import { EditError } from '../core/command.ts';
 import { addMedia, updateMedia } from '../core/commands/tracks.ts';
 import { getMedia, makeProject, makeSequence, makeTrack, type Id, type MediaAsset, type Project } from '../core/model.ts';
@@ -38,6 +39,8 @@ export class App {
   readonly source: MonitorEngine;
   /** Every action: the core registry plus ones that need the window (dialogs), which the UI adds. */
   readonly actions: Action[] = [...ACTIONS];
+  /** Speech-to-text provider. None ships with Cutline; an integrator sets one before the window is built. */
+  speech: SpeechProvider | null = null;
   /** Id of the last action run, however it was triggered. */
   lastAction: string | null = null;
   private readonly blobs = new Map<Id, Blob>();

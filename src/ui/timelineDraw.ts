@@ -105,7 +105,7 @@ export class TimelinePainter {
       ctx.fillStyle = color.text;
       ctx.font = `${type.sm}px ${type.family}`;
       ctx.textBaseline = 'top';
-      ctx.fillText(c.name || asset?.name || c.kind, Math.max(left, 0) + 4, top + 2);
+      ctx.fillText(c.name || c.text?.text.split(String.fromCharCode(10))[0] || asset?.name || c.kind, Math.max(left, 0) + 4, top + 2);
     }
     ctx.restore();
     ctx.globalAlpha = 1;

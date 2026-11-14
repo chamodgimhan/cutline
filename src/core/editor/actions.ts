@@ -2,12 +2,14 @@
 import { addClips, freezeFrame, linkClips, moveClips, removeClips, splitClips, unlinkClips, updateClips, type Placement } from '../commands/clips.ts';
 import { extractRange, insertClips, liftRange, overwriteClips, rippleDelete } from '../commands/range.ts';
 import { addMarker, addTrack, moveTrack, removeMarker, removeTrack, setRange, setTrackProps } from '../commands/tracks.ts';
+import { captionStyle, mergeCues, splitCue } from '../captions.ts';
 import { EditError } from '../command.ts';
-import { clipEnd, sequenceEnd, type Id, type TrackKind } from '../model.ts';
+import { clipEnd, defaultTextProps, makeClip, sequenceEnd, type Id, type TrackKind } from '../model.ts';
+import { TICKS_PER_SECOND } from '../time.ts';
 import type { Tick } from '../time.ts';
 import { TOOLS, type Session } from './session.ts';
 
-export type Menu = 'Edit' | 'Clip' | 'Mark' | 'Sequence' | 'Playback' | 'View' | 'Tools' | 'Track' | 'Help';
+export type Menu = 'Edit' | 'Clip' | 'Mark' | 'Sequence' | 'Titles' | 'Playback' | 'View' | 'Tools' | 'Track' | 'Help';
 
 export interface Action {
   id: string;
@@ -181,6 +183,26 @@ export const ACTIONS: readonly Action[] = [
   a('track.delete', 'Delete Track', 'Track', [], (s) => s.history.execute(removeTrack(s.project, s.ctx, activeTrack(s)))),
   a('track.up', 'Move Track Up', 'Track', [], (s) => s.history.execute(moveTrack(s.project, s.ctx, activeTrack(s), s.seq.tracks.findIndex((t) => t.id === s.activeTrackId) + 1))),
   a('track.down', 'Move Track Down', 'Track', [], (s) => s.history.execute(moveTrack(s.project, s.ctx, activeTrack(s), s.seq.tracks.findIndex((t) => t.id === s.activeTrackId) - 1))),
+
+  a('title.add', 'Add Title at Playhead', 'Titles', ['Ctrl+T'], (s) => {
+    const track = s.targetTrack('video');
+    if (!track) throw new EditError('Add or unlock a video track first.');
+    const clip = makeClip({ id: s.newId(), kind: 'text', start: s.toFrame(s.playhead), duration: s.toFrameDelta(5 * TICKS_PER_SECOND), text: defaultTextProps('Title') });
+    s.history.execute(overwriteClips(s.project, s.ctx, { at: clip.start, items: [{ trackId: track.id, clip }] }));
+    s.select([clip.id]);
+  }),
+  a('caption.add', 'Add Caption at Playhead', 'Titles', ['Ctrl+Alt+C'], (s) => {
+    s.history.group('Add caption', () => {
+      if (!s.seq.tracks.some((t) => t.kind === 'caption' && !t.locked)) s.history.execute(addTrack(s.project, s.ctx, { kind: 'caption' }));
+      const track = s.targetTrack('caption');
+      if (!track) throw new EditError('Unlock the caption track first.');
+      const clip = makeClip({ id: s.newId(), kind: 'caption', start: s.toFrame(s.playhead), duration: s.toFrameDelta(2 * TICKS_PER_SECOND), text: { ...captionStyle(), text: 'Caption' } });
+      s.history.execute(overwriteClips(s.project, s.ctx, { at: clip.start, items: [{ trackId: track.id, clip }] }));
+      s.select([clip.id]);
+    });
+  }),
+  a('caption.split', 'Split Caption at Playhead', 'Titles', [], (s) => s.history.execute(splitCue(s.project, s.ctx, { id: selected(s)[0] as Id, at: s.toFrame(s.playhead) }))),
+  a('caption.merge', 'Merge Captions', 'Titles', [], (s) => s.history.execute(mergeCues(s.project, s.ctx, selected(s)))),
 
   a('play.toggle', 'Play / Pause', 'Playback', ['Space'], (s) => s.clock.toggle()),
   a('play.reverse', 'Shuttle Reverse', 'Playback', ['J'], (s) => s.clock.shuttle(-1)),

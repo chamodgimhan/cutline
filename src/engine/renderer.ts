@@ -1,10 +1,11 @@
 // renderFrame: the single path from a project and a time to pixels. Preview and export both use it.
-import { getMedia, type Id, type Project } from '../core/model.ts';
+import { getMedia, type Id, type Project, type TextProps } from '../core/model.ts';
 import { pictureLayers, planFrame, type LayerPlan } from '../core/render/plan.ts';
 import type { Tick } from '../core/time.ts';
 import { Canvas2dCompositor } from './compositor/canvas2d.ts';
 import { GlCompositor, type Compositor, type LayerImage } from './compositor/gl.ts';
 import type { MediaSources } from './mediaSources.ts';
+import { drawText, loadFonts } from './text.ts';
 
 export type PreviewScale = 1 | 0.5 | 0.25;
 
@@ -42,10 +43,15 @@ export class Renderer {
   /** Draw the sequence at `tick` onto the canvas. */
   async renderFrame(project: Project, tick: Tick, scale: PreviewScale = 1, seqId?: Id): Promise<void> {
     const plan = planFrame(project, tick, seqId);
-    const layers = pictureLayers(plan).filter((l) => l.kind === 'media');
+    const all = pictureLayers(plan);
+    const layers = all.filter((l) => l.kind === 'media');
+    const titles = all.filter((l) => l.kind === 'text' && l.clip.text);
+    if (titles.length) await loadFonts();
     const loaded = await Promise.all(layers.map((l) => this.image(project, l)));
     try {
-      this.compositor.render(plan, new Map(layers.map((l, i) => [l, (loaded[i] as { image: LayerImage }).image])), scale);
+      const images = new Map<LayerPlan, LayerImage>(layers.map((l, i) => [l, (loaded[i] as { image: LayerImage }).image]));
+      for (const l of titles) images.set(l, drawText(l.clip.text as TextProps, plan.width, plan.height, scale));
+      this.compositor.render(plan, images, scale);
     } finally {
       for (const l of loaded) l.close?.();
     }

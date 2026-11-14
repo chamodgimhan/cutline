@@ -119,6 +119,16 @@ export function planFrame(project: Project, tick: Tick, seqId?: Id): FramePlan {
     if (layer.opacity <= 0 && layer.kind !== 'adjust' && !layer.transition) continue;
     layers.push(layer);
   }
+  // Burned-in captions sit above every picture track. A hidden caption track is not burned in.
+  for (const track of seq.tracks) {
+    if (track.kind !== 'caption' || track.hidden) continue;
+    const c = clipAt(track, tick);
+    if (!c || !c.enabled || !c.text?.text.trim()) continue;
+    layers.push({
+      clipId: c.id, trackId: track.id, kind: 'text', mediaId: null, sourceTime: 0, localTime: tick - c.start, rotation: 0, opacity: 1, blend: 'normal',
+      matrix: [seq.width, 0, 0, seq.height, 0, 0], uv: [0, 0, 1, 1], clip: c, transition: null,
+    });
+  }
   return { width: seq.width, height: seq.height, layers };
 }
 

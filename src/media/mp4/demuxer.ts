@@ -195,6 +195,7 @@ export class Mp4File {
     const moov = await findMoov(source);
     let tracks: Mp4Track[];
     try {
+      if (child(moov, 'mvex')) throw new MediaError('unsupported', 'This is a fragmented MP4, which Cutline cannot open. Re-save or convert it to a standard MP4 first.');
       const mvhd = child(moov, 'mvhd');
       const movieTimescale = mvhd ? u32(mvhd, mvhd[0] === 1 ? 20 : 12) : 1000;
       tracks = children(moov).filter((b) => b.type === 'trak').map((b) => parseTrack(b.body, movieTimescale || 1000)).filter((t): t is Mp4Track => t !== null);

@@ -12,6 +12,8 @@ export function checkInvariants(p: Project): string[] {
   };
   for (const m of p.media) {
     uniq(m.id, 'media');
+    if (typeof m.id !== 'string' || typeof m.name !== 'string' || typeof m.path !== 'string' || !['video', 'audio', 'image'].includes(m.kind)) errors.push(`media ${m.id}: malformed entry`);
+    if ((m.kind !== 'audio' && !m.video) || (m.video && !(m.video.width > 0 && m.video.height > 0 && m.video.fps?.num > 0 && m.video.fps?.den > 0))) errors.push(`media ${m.id}: bad video info`);
     if (!isTick(m.duration) || m.duration < 0) errors.push(`media ${m.id}: bad duration`);
   }
   if (!p.sequences.some((s) => s.id === p.activeSequenceId)) errors.push('active sequence missing');

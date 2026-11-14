@@ -2,12 +2,16 @@
 const SUITES: Record<string, () => Promise<{ run: () => Promise<string[]> }>> = {
   phase0: () => import('./phase0.ts'),
   phase2: () => import('./phase2.ts'),
+  phase3: () => import('./phase3.ts'),
+  drift: () => import('./drift.ts'),
 };
 
 export {};
 
 const wanted = process.argv.slice(2);
-const names = wanted.length ? wanted : Object.keys(SUITES);
+// Long-running suites run only when named.
+const LONG = new Set(['drift']);
+const names = wanted.length ? wanted : Object.keys(SUITES).filter((n) => !LONG.has(n));
 let failed = 0;
 for (const name of names) {
   const load = SUITES[name];

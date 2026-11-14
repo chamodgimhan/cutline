@@ -74,7 +74,7 @@ function hevcCodec(c: Uint8Array): string {
     compat >>>= 1;
   }
   const constraints: string[] = [];
-  for (let i = 6; i < 12; i++) constraints.push((c[i] ?? 0).toString(16));
+  for (let i = 6; i < 12; i++) constraints.push((c[i] ?? 0).toString(16).toUpperCase());
   while (constraints.length && constraints[constraints.length - 1] === '0') constraints.pop();
   return `hvc1.${space}${b1 & 31}.${(rev >>> 0).toString(16)}.${b1 & 0x20 ? 'H' : 'L'}${c[12] ?? 0}${constraints.length ? '.' + constraints.join('.') : ''}`;
 }

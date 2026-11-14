@@ -103,5 +103,3 @@ export function randomCommand(p: Project, ctx: EditCtx, r: Rnd): Command | null 
     throw e;
   }
 }
-
-export const FUZZ_EDIT_KINDS = 27;

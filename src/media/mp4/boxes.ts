@@ -105,9 +105,8 @@ export function ipcmEntry(channels: number, sampleRate: number, bits: number): U
   return audioEntry('ipcm', channels, sampleRate, bits, fullBox('pcmC', 0, 0, new Uint8Array([1, bits])));
 }
 
-export function u32Table(type: string, version: number, rows: readonly (readonly number[])[], prefix: number[] = []): Uint8Array {
+export function u32Table(type: string, version: number, rows: readonly (readonly number[])[]): Uint8Array {
   const w = new ByteWriter(8 + rows.length * 8);
-  for (const p of prefix) w.u32(p);
   w.u32(rows.length);
   for (const r of rows) for (const v of r) w.i32(v | 0);
   return fullBox(type, version, 0, w.finish());

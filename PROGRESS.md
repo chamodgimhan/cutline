@@ -1,18 +1,20 @@
 # Cutline progress
 
 ## Phase
-Phase 3: Compositor and playback (starting)
+Phase 4: Timeline and editing UI (starting)
 
 ## Done
 - Setup: CLAUDE.md, SPEC.md, git.
 - Phase 0: scaffold, verify, theme, fixture generator (9 fixtures, byte-identical), phase0 smoke (lossless decode in Chrome).
 - Phase 1: time, model, commands (27 kinds), history, snapping, project file + v1 migration. 100 unit tests; property test 10,000 sequences x 12 steps green.
 - Phase 2: MP4/MOV demuxer, probe (fps, VFR, rotation, WAV, images), fingerprint, MediaLibrary (offline/relink), VideoSource (WebCodecs, bounded cache), AudioSource (PCM + WebCodecs), media worker (peaks, thumbnails). 118 unit tests; phase2 smoke green.
+- Phase 3: keyframes, render plan, WebGL2 compositor + Canvas 2D fallback, renderFrame, renderAudio (OfflineAudioContext), audio-clock Transport (play, pause, JKL, step, loop, quality), sourceProject for the source monitor. 140 unit tests; phase3 smoke and 10-minute drift green. Reviewed and audited 2026-11-14.
 
 ## Next step
-Read RESUME.md first. Phase 3 step 1 (keyframes + render plan in `src/core/render/`) is done and committed. Next: `src/engine/compositor` (WebGL2 + Canvas 2D fallback), `renderFrame(project, tick)`, audio-clock transport (play, pause, JKL, step, loop, quality), source/program monitors, phase3 smoke (render hashes, drift, fps, scrub).
+Read RESUME.md first. Phase 4 step 1: app shell (index.html, src/ui/, theme CSS, app state store holding History + MediaLibrary + MediaSources + Transport), then media bin with import (picker + drag-and-drop), then timeline. Carry-overs to do inside Phase 4 import: (a) refuse a file at import when VideoDecoder/AudioDecoder.isConfigSupported is false, with the plain message; (b) take image width/height from the decoded bitmap (EXIF-rotated photos). Carry-over for Phase 8: exported AAC needs its encoder delay removed or signalled (edit list), and an imported AAC file without an edit list plays about 44 ms late.
 
 ## Budgets measured
+- Render: 2D fallback matches GL at 51-68 dB. 1080p scrub through renderFrame worst 80 ms. 1080p playback 29.2 of 30 fps (software GL). 10-min playback: audio/timeline error 0.02 ms, picture lag 0.12 frames, no drift, 7 frames dropped.
 - 2h open: node 125 ms / 1 MB of 444 MB read; browser ~50 ms. 1080p scrub worst 124 ms (limit 150), mean ~80 ms.
 
 ## Environment (Phase 0)
@@ -40,3 +42,6 @@ None.
 - Import formats v1: MP4/MOV/M4A (H.264, HEVC, VP9, AV1, AAC, MP3, Opus, FLAC, PCM as the machine supports), WAV, PNG/JPEG/WebP. WebM/MKV import refused with a plain message.
 - Picker and drag-and-drop UI arrive with the media bin (Phase 4); both call MediaLibrary.importSource, tested in Phase 2.
 - Workers get media through a SourceSpec (Blob, or URL with range requests for the desktop file protocol).
+- Open video decoders are capped at 6, 64 MB of cached frames each; a failed open is cached until the media is relinked.
+- Text and adjustment layers are planned by planFrame but drawn from Phases 6 and 7.
+- Monitors: Phase 3 delivers Renderer + Transport + sourceProject; the monitor panels are built in Phase 4.

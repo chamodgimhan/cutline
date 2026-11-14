@@ -6,6 +6,8 @@
 - `src/media/`: container code, pure TS. `bytes.ts` (ByteWriter, BitWriter, BitReader, hashBytes), `mp4/boxes.ts`, `mp4/muxer.ts`.
 - `src/media/` also: `source.ts` (ByteSource, MediaError, fingerprint), `mp4/parse.ts` + `mp4/demuxer.ts` (Mp4File, sampleAtTime, keyBefore), `pcm.ts`, `probe.ts`, `library.ts` (MediaLibrary: online/offline, relink), `peaks.ts` (PeakBuilder, ByteCache).
 - `src/engine/`: browser only. `videoSource.ts` (frame(index)/frameAt(tick), caller closes frames), `audioSource.ts` (read(first, count) floats), `mediaWorker.ts` + `mediaJobs.ts` (peaks, thumbs), `sourceSpec.ts`, `draw2d.ts`.
+- `src/engine/` playback: `compositor/gl.ts` + `compositor/canvas2d.ts` (execute a FramePlan), `renderer.ts` (`Renderer.renderFrame(project, tick, scale)`), `audioRender.ts` (`renderAudio(project, range, media)` -> stereo at sequence rate), `mediaSources.ts` (open decoders per asset), `transport.ts` (audio context is the clock; `tickAt`, play/pause/shuttle/seek/step/loop).
+- `src/core/keyframes.ts` (evalParam + key edits), `src/core/render/plan.ts` (`planFrame` -> layers with affine matrix, uv, opacity, blend), `src/core/monitor.ts` (`sourceProject`).
 - `src/ui/`: panels and tools. Not yet created.
 - `tools/fixtures/`: test media generator (never shipped). `h264pcm.ts` lossless H.264 (I_PCM + P_Skip), `frame.ts` test picture + counter reader, `build.ts` specs, `generate.ts` CLI.
 - `tools/smoke/`: headless Chrome suites (playwright-core + system Chrome). `run.ts` CLI, `server.ts` (Vite dev server + harness page), `phaseN.ts` node side, `page/phaseN.page.ts` page side exposed as `window.T`.

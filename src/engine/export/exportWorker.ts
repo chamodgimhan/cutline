@@ -4,6 +4,7 @@ import { jobFrameTick, type ExportJob } from '../../core/exportPlan.ts';
 import { getSequence, type Id, type Project } from '../../core/model.ts';
 import { viewWindow } from '../../core/render/plan.ts';
 import { TICKS_PER_SECOND, tickToSample, type Tick } from '../../core/time.ts';
+import { stampWatermark } from '../../core/watermark.ts';
 import { MediaLibrary } from '../../media/library.ts';
 import { concatBytes } from '../../media/bytes.ts';
 import { DEFAULT_COLOR, type ColorInfo } from '../../media/color.ts';
@@ -20,7 +21,7 @@ import { audioConfig, QUANTIZER, videoConfig } from './codecs.ts';
 import { FileSink, MemoryExportSink, writeErrorMessage, type ExportSink } from './sink.ts';
 
 export type ToWorker =
-  | { type: 'start'; job: ExportJob; project: Project; media: Record<Id, SourceSpec>; handle: FileSystemFileHandle | null; verify: boolean }
+  | { type: 'start'; job: ExportJob; project: Project; media: Record<Id, SourceSpec>; handle: FileSystemFileHandle | null; verify: boolean; watermark: boolean }
   | { type: 'audio'; seq: number; left: Float32Array; right: Float32Array }
   | { type: 'cancel' };
 
@@ -56,7 +57,7 @@ interface Encoded {
 }
 const bytesOf = (d: AllowSharedBufferSource): Uint8Array => (d instanceof ArrayBuffer || d instanceof SharedArrayBuffer ? new Uint8Array(d as ArrayBuffer) : new Uint8Array(d.buffer as ArrayBuffer, d.byteOffset, d.byteLength)).slice();
 
-async function exportMovie(job: ExportJob, project: Project, renderer: Renderer, canvas: OffscreenCanvas, sink: ExportSink, verify: boolean): Promise<number> {
+async function exportMovie(job: ExportJob, project: Project, renderer: Renderer, sink: ExportSink, verify: boolean, watermark: boolean): Promise<number> {
   const vcfg = await videoConfig(job.format, job);
   const acfg = await audioConfig(job.format, job.sampleRate, job.audioBitrate);
   if (!vcfg || !acfg) throw new MediaError('unsupported', `This computer cannot encode ${job.format === 'mp4' ? 'MP4 (H.264 and AAC)' : 'WebM (VP9 and Opus)'} at this size.`);
@@ -152,13 +153,17 @@ async function exportMovie(job: ExportJob, project: Project, renderer: Renderer,
       if (failure) throw failure;
       await renderer.renderFrame(project, jobFrameTick(job, i), scale, undefined, view);
       // Convert to YUV ourselves (see yuv.ts): the encoder then gets, and the file is labelled as, BT.709 limited range.
-      const yuv = rgbaToI420(renderer.readPixels(), job.width, job.height);
+      const rgba = renderer.readPixels();
+      if (watermark) stampWatermark(rgba, job.width, job.height);
+      const yuv = rgbaToI420(rgba, job.width, job.height);
       const frame = new VideoFrame(yuv, { format: 'I420', codedWidth: job.width, codedHeight: job.height, timestamp: frameMicros(i), duration: frameMicros(i + 1) - frameMicros(i), colorSpace: DEFAULT_COLOR as VideoColorSpaceInit });
       if (verify) {
         // What the encoder is handed must be exactly renderFrame's pixels (in their YUV form), read back from the frame itself.
         const given = new Uint8Array(frame.allocationSize());
         await frame.copyTo(given);
-        const drawn = rgbaToI420(renderer.readPixels(), job.width, job.height);
+        const again = renderer.readPixels();
+        if (watermark) stampWatermark(again, job.width, job.height);
+        const drawn = rgbaToI420(again, job.width, job.height);
         if (frame.format !== 'I420' || given.length !== drawn.length || given.some((b, k) => b !== drawn[k])) mismatches++;
       }
       venc.encode(frame, { keyFrame: i % (perSecond * 2) === 0, ...quant });
@@ -225,8 +230,13 @@ async function run(m: Extract<ToWorker, { type: 'start' }>): Promise<void> {
       if (job.format === 'png') {
         const view = { width: job.width, height: job.height };
         await renderer.renderFrame(project, job.start, job.width / viewWindow(getSequence(project), view).width, undefined, view);
-        sink.write(new Uint8Array(await (await canvas.convertToBlob({ type: 'image/png' })).arrayBuffer()));
-      } else mismatches = await exportMovie(job, project, renderer, canvas, sink, m.verify);
+        // PNG from the same pixels a movie frame would get (so the watermark, when there is one, is identical).
+        const rgba = renderer.readPixels();
+        if (m.watermark) stampWatermark(rgba, job.width, job.height);
+        const flat = new OffscreenCanvas(job.width, job.height);
+        (flat.getContext('2d') as OffscreenCanvasRenderingContext2D).putImageData(new ImageData(new Uint8ClampedArray(rgba.buffer as ArrayBuffer), job.width, job.height), 0, 0);
+        sink.write(new Uint8Array(await (await flat.convertToBlob({ type: 'image/png' })).arrayBuffer()));
+      } else mismatches = await exportMovie(job, project, renderer, sink, m.verify, m.watermark);
     }
     stop();
     const bytes = await sink.close();

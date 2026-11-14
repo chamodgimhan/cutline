@@ -62,7 +62,7 @@ export async function run(): Promise<string[]> {
     // --- The export dialog in the app ---
     const ui = await browser.newPage({ viewport: { width: 1500, height: 900 }, acceptDownloads: true });
     ui.on('pageerror', (err) => failures.push(`page error: ${err.message}`));
-    await ui.goto(served.url + '/index.html');
+    await ui.goto(served.app);
     await ui.waitForFunction(() => !!(window as unknown as Win).cutline);
     await ui.setInputFiles('input[data-role=import]', path.join(OUT_DIR, 'clip_24.mp4'));
     await ui.waitForFunction(() => (window as unknown as Win).cutline.app.session.project.media.length === 1);

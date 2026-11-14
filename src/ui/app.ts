@@ -16,6 +16,7 @@ import type { SourceSpec } from '../engine/sourceSpec.ts';
 import { Transport } from '../engine/transport.ts';
 import { MediaLibrary } from '../media/library.ts';
 import { BlobSource, MediaError } from '../media/source.ts';
+import type { LicenseStatus } from '../core/license.ts';
 import { ErrorLog } from '../core/projectState.ts';
 import { fingerprint } from '../media/source.ts';
 import { load, save } from './dom.ts';
@@ -44,6 +45,8 @@ export class App {
   readonly source: MonitorEngine;
   /** Every action: the core registry plus ones that need the window (dialogs), which the UI adds. */
   readonly actions: Action[] = [...ACTIONS];
+  /** Licence state, read from storage at start-up and changed in the About and Licence dialog. */
+  license: LicenseStatus = { state: 'none' };
   /** Project file access. The desktop shell swaps in native dialogs. */
   files: ProjectFiles = webProjectFiles;
   /** The file the open project was loaded from or saved to, if any. */

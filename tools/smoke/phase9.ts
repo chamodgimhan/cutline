@@ -22,7 +22,7 @@ export async function run(): Promise<string[]> {
     const open = async (): Promise<Page> => {
       const p = await context.newPage();
       p.on('pageerror', (e) => failures.push(`page error: ${e.message}`));
-      await p.goto(served.url + '/index.html');
+      await p.goto(served.app);
       await p.waitForFunction(() => !!(window as unknown as Win).cutline);
       return p;
     };

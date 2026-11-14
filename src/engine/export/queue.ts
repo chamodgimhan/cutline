@@ -30,6 +30,7 @@ interface Entry {
   media: Record<Id, SourceSpec>;
   dest: Destination;
   verify: boolean;
+  watermark: boolean;
 }
 
 export class ExportQueue {
@@ -47,11 +48,11 @@ export class ExportQueue {
   }
 
   /** Queue jobs. Each keeps the project as it was when queued, so later edits do not change the export. */
-  add(project: Project, jobs: readonly ExportJob[], media: Record<Id, SourceSpec>, dest: Destination, verify = false): ExportItem[] {
+  add(project: Project, jobs: readonly ExportJob[], media: Record<Id, SourceSpec>, dest: Destination, verify = false, watermark = false): ExportItem[] {
     const added = jobs.map((job) => {
       const item: ExportItem = { id: this.nextId++, job, state: 'queued', done: 0, total: job.frameCount, etaMs: null, message: null, bytes: null, size: 0, mismatches: 0 };
       this.items.push(item);
-      this.entries.set(item.id, { item, project, media, dest, verify });
+      this.entries.set(item.id, { item, project, media, dest, verify, watermark });
       return item;
     });
     this.emit();
@@ -159,7 +160,7 @@ export class ExportQueue {
       } else if (m.type === 'failed') void finish('failed', m.message);
       else void finish('cancelled', null);
     };
-    worker.postMessage({ type: 'start', job: item.job, project: e.project, media: e.media, handle, verify: e.verify } satisfies ToWorker);
+    worker.postMessage({ type: 'start', job: item.job, project: e.project, media: e.media, handle, verify: e.verify, watermark: e.watermark } satisfies ToWorker);
   }
 
   subscribe(fn: () => void): () => void {

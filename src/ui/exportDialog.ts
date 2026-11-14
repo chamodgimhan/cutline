@@ -1,5 +1,6 @@
 // Export dialog: settings, destination, and the queue with progress, time left and cancel.
 import { EditError } from '../core/command.ts';
+import { isLicensed } from '../core/license.ts';
 import { FORMAT_LABELS, offlineInJobs, outputSize, planExport, PRESETS, type ExportFormat, type ExportSettings, type Quality, type RangeMode } from '../core/exportPlan.ts';
 import { supportedFormats } from '../engine/export/codecs.ts';
 import type { Destination, ExportItem } from '../engine/export/queue.ts';
@@ -76,7 +77,8 @@ export function openExportDialog(app: App): void {
         const spec = app.spec(m);
         if (spec) media[m.id] = spec;
       }
-      app.exports.add(s.project, jobs, media, dest as Destination);
+      // Without a valid licence key the picture carries the Cutline mark.
+      app.exports.add(s.project, jobs, media, dest as Destination, false, !isLicensed(app.license));
     } catch (e) {
       if (!(e instanceof EditError)) throw e;
       note.textContent = e.message;

@@ -1,4 +1,5 @@
 // Phase 4 smoke: drives the real app with real pointer and key events and compares the model.
+import * as fs from 'node:fs';
 import * as path from 'node:path';
 import type { Page } from 'playwright-core';
 import type { Project } from '../../src/core/model.ts';
@@ -38,7 +39,7 @@ export async function run(): Promise<string[]> {
     const page: Page = await browser.newPage({ viewport: { width: 1500, height: 900 } });
     page.on('pageerror', (e) => failures.push(`page error: ${e.message}`));
     page.on('console', (m) => m.type() === 'error' && failures.push(`console error: ${m.text()}`));
-    await page.goto(served.url + '/index.html');
+    await page.goto(served.app);
     await page.waitForFunction(() => !!(window as unknown as Win).cutline);
 
     const reset = (p: Project = base()): Promise<void> => page.evaluate((proj) => {
@@ -87,11 +88,12 @@ export async function run(): Promise<string[]> {
     await page.setInputFiles('input[data-role=import]', [fixture('clip_24'), fixture('corrupt')]);
     await page.waitForFunction(() => (window as unknown as Win).cutline.app.session.project.media.length === 1 && (window as unknown as Win).cutline.app.session.message);
     check(/corrupt\.mp4: This file is damaged or incomplete/.test(await state<string>('app.session.message')), `corrupt import message: ${await state('app.session.message')}`);
-    const dropped = await page.evaluateHandle(async (url) => {
+    // The dropped file is built from bytes handed in by the test, so the page itself fetches nothing.
+    const dropped = await page.evaluateHandle((b64) => {
       const dt = new DataTransfer();
-      dt.items.add(new File([await (await fetch(url)).blob()], 'rotated.mp4', { type: 'video/mp4' }));
+      dt.items.add(new File([Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))], 'rotated.mp4', { type: 'video/mp4' }));
       return dt;
-    }, served.url + '/fixtures/out/rotated.mp4');
+    }, fs.readFileSync(fixture('rotated')).toString('base64'));
     await page.dispatchEvent('[data-panel=media] .body > div', 'drop', { dataTransfer: dropped });
     await page.waitForFunction(() => (window as unknown as Win).cutline.app.session.project.media.length === 2);
     eq(await state('app.session.project.media.map((m) => [m.name, m.kind, m.video.rotation])'), [['clip_24.mp4', 'video', 0], ['rotated.mp4', 'video', 90]], 'imported media');

@@ -55,7 +55,7 @@ export async function run(): Promise<string[]> {
     // --- The UI, with real input ---
     const ui = await browser.newPage({ viewport: { width: 1500, height: 900 }, acceptDownloads: true });
     ui.on('pageerror', (err) => failures.push(`page error: ${err.message}`));
-    await ui.goto(served.url + '/index.html');
+    await ui.goto(served.app);
     await ui.waitForFunction(() => !!(window as unknown as Win).cutline);
     const st = <T>(expr: string): Promise<T> => ui.evaluate((x) => new Function('app', 'S', `return ${x}`)((window as unknown as Win).cutline.app, 705600000) as T, expr);
     const settle = (): Promise<void> => ui.evaluate(() => new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r()))));

@@ -1,4 +1,5 @@
 // Entry point: builds the window (menu bar, resizable panels, status bar) around one App.
+import { aboutActions, loadLicense } from './about.ts';
 import { App } from './app.ts';
 import { audioActions } from './audioActions.ts';
 import { binPanel } from './bin.ts';
@@ -31,6 +32,8 @@ export function mount(root: HTMLElement): App {
   app.actions.push(...audioActions(app));
   app.actions.push(...captionActions(app, app.speech));
   void installProject(app).then((actions) => app.actions.unshift(...actions));
+  void loadLicense(app);
+  app.actions.push(...aboutActions(app));
   app.actions.push({ id: 'file.export', label: 'Export…', menu: 'File', keys: ['Ctrl+E'], run: () => openExportDialog(app) });
   app.actions.push({ id: 'help.shortcuts', label: 'Keyboard Shortcuts…', menu: 'Help', keys: ['Ctrl+Alt+K'], run: () => openShortcutEditor(app) });
 

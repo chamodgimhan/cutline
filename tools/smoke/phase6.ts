@@ -95,7 +95,7 @@ export async function run(): Promise<string[]> {
     // --- The UI for all of this, with real input ---
     const ui = await browser.newPage({ viewport: { width: 1500, height: 900 } });
     ui.on('pageerror', (err) => failures.push(`page error: ${err.message}`));
-    await ui.goto(served.url + '/index.html');
+    await ui.goto(served.app);
     await ui.waitForFunction(() => !!(window as unknown as Win).cutline);
     const F = frameTicks({ num: 30, den: 1 });
     await ui.evaluate((proj) => {

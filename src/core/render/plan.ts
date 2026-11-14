@@ -33,9 +33,27 @@ export interface LayerPlan {
 }
 
 export interface FramePlan {
+  /** Size of the planned frame in sequence pixels (the sequence, or the part of it an export of another shape shows). */
   width: number;
   height: number;
   layers: LayerPlan[];
+}
+
+/** Output shape for an export that is not the sequence's own shape. Only the ratio matters. */
+export interface View {
+  width: number;
+  height: number;
+}
+
+/**
+ * The window of the sequence that fills an output of another shape (cover, centred), in sequence pixels.
+ * Same shape: the whole sequence.
+ */
+export function viewWindow(seq: { width: number; height: number }, view?: View): { width: number; height: number; x: number; y: number } {
+  if (!view || Math.abs(view.width * seq.height - view.height * seq.width) < 1e-6) return { width: seq.width, height: seq.height, x: 0, y: 0 };
+  const g = Math.max(view.width / seq.width, view.height / seq.height);
+  const [w, h] = [view.width / g, view.height / g];
+  return { width: w, height: h, x: (seq.width - w) / 2, y: (seq.height - h) / 2 };
 }
 
 /** Size of the picture box before the clip's own scale, for a fit mode. */
@@ -96,9 +114,30 @@ function layerOf(project: Project, seq: Sequence, track: Track, c: Clip, local: 
   };
 }
 
-/** Layers visible at `tick`, bottom first. */
-export function planFrame(project: Project, tick: Tick, seqId?: Id): FramePlan {
+/** Layers visible at `tick`, bottom first. With `view`, planned for an output of that shape (see viewWindow). */
+export function planFrame(project: Project, tick: Tick, seqId?: Id, view?: View): FramePlan {
   const seq = getSequence(project, seqId);
+  const win = viewWindow(seq, view);
+  const reshaped = win.width !== seq.width || win.height !== seq.height;
+  /** Move a layer from sequence coordinates into the window, applying the clip's own reframing. */
+  const place = (l: LayerPlan | null): LayerPlan | null => {
+    if (!l || !reshaped) return l;
+    if (l.kind === 'text') {
+      // Text is laid out afresh for the window, so it wraps to the new width instead of being cropped.
+      const geo = l.clip.video ? layerMatrix(l.clip, l.localTime, win.width, win.height, win.width, win.height) : null;
+      return { ...l, matrix: geo?.matrix ?? [win.width, 0, 0, win.height, 0, 0], uv: geo?.uv ?? l.uv };
+    }
+    const r = l.clip.reframe ?? { x: 0, y: 0, scale: 1 };
+    // Zoom about the sequence centre, pan across what the window crops away, then shift into the window.
+    const [cx, cy] = [seq.width / 2, seq.height / 2];
+    const dx = -r.x * win.x - win.x;
+    const dy = -r.y * win.y - win.y;
+    const [a, b, c, d, e, f] = l.matrix;
+    const s = r.scale;
+    const out: LayerPlan = { ...l, matrix: [a * s, b * s, c * s, d * s, (e - cx) * s + cx + dx, (f - cy) * s + cy + dy] };
+    if (l.transition?.outgoing) out.transition = { ...l.transition, outgoing: place(l.transition.outgoing) };
+    return out;
+  };
   const layers: LayerPlan[] = [];
   for (const track of seq.tracks) {
     if (track.kind !== 'video' || track.hidden) continue;
@@ -117,7 +156,7 @@ export function planFrame(project: Project, tick: Tick, seqId?: Id): FramePlan {
       layer.transition = { type: tout.type, progress: (tick - (c.start + c.duration - tout.duration)) / tout.duration, outgoing: null, incoming: false };
     }
     if (layer.opacity <= 0 && layer.kind !== 'adjust' && !layer.transition) continue;
-    layers.push(layer);
+    layers.push(place(layer) as LayerPlan);
   }
   // Burned-in captions sit above every picture track. A hidden caption track is not burned in.
   for (const track of seq.tracks) {
@@ -126,10 +165,10 @@ export function planFrame(project: Project, tick: Tick, seqId?: Id): FramePlan {
     if (!c || !c.enabled || !c.text?.text.trim()) continue;
     layers.push({
       clipId: c.id, trackId: track.id, kind: 'text', mediaId: null, sourceTime: 0, localTime: tick - c.start, rotation: 0, opacity: 1, blend: 'normal',
-      matrix: [seq.width, 0, 0, seq.height, 0, 0], uv: [0, 0, 1, 1], clip: c, transition: null,
+      matrix: [win.width, 0, 0, win.height, 0, 0], uv: [0, 0, 1, 1], clip: c, transition: null,
     });
   }
-  return { width: seq.width, height: seq.height, layers };
+  return { width: win.width, height: win.height, layers };
 }
 
 /** Every layer that needs a picture, including clips that are only visible as the outgoing side of a transition. */

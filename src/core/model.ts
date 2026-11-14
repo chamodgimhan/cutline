@@ -117,6 +117,11 @@ export interface Clip {
   effects: Effect[];
   transitionIn: Transition | null;
   transitionOut: Transition | null;
+  /**
+   * Framing used when exporting to a different shape than the sequence (e.g. vertical): pan across the
+   * part that would be cropped (-1..1 each way) and extra zoom. Null = centred.
+   */
+  reframe: { x: number; y: number; scale: number } | null;
 }
 
 export interface Track {
@@ -190,7 +195,7 @@ export function makeClip(init: Pick<Clip, 'id' | 'kind' | 'start' | 'duration'> 
     video: k === 'video' || k === 'text' || k === 'adjust' ? defaultVideoProps() : null,
     audio: k === 'audio' ? defaultAudioProps() : null,
     text: k === 'text' || k === 'caption' ? defaultTextProps() : null,
-    effects: [], transitionIn: null, transitionOut: null,
+    effects: [], transitionIn: null, transitionOut: null, reframe: null,
     ...init,
     // Older files may lack text fields added since: fill them in.
     ...(init.text ? { text: { ...defaultTextProps(), ...init.text } } : {}),

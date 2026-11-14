@@ -10,6 +10,7 @@ import type { PreviewScale, Renderer } from './renderer.ts';
 /** Wall-clock length of one scheduled audio chunk, and how far ahead audio is kept scheduled. */
 const CHUNK_SECONDS = 0.4;
 const AHEAD_SECONDS = 1.0;
+const SCRUB_SECONDS = 0.08;
 export const SHUTTLE_SPEEDS = [1, 2, 4, 8];
 
 interface Segment {
@@ -17,6 +18,9 @@ interface Segment {
   ctxEnd: number;
   tickStart: Tick;
   tickEnd: Tick;
+  /** The samples as played (already reversed for reverse play), for the meters. */
+  left: Float32Array;
+  right: Float32Array;
 }
 
 export interface TransportOptions {
@@ -46,9 +50,15 @@ export class Transport {
   private wanted: Tick = -1;
   private readonly listeners = new Set<() => void>();
   loop = false;
+  /** Play a short burst of audio when the playhead is moved while paused. */
+  scrubAudio = true;
+  private scrubNode: AudioBufferSourceNode | null = null;
+  private scrubGen = 0;
   quality: PreviewScale = 1;
   /** Frames drawn and frames skipped because the previous one was still rendering. */
   stats = { presented: 0, dropped: 0 };
+  /** Scrub bursts played (for tests). */
+  scrubs = 0;
   /** Called after each frame is drawn during playback, with the audio-clock time it was drawn at. */
   onPresent: ((contextTime: number, frameTick: Tick) => void) | null = null;
 
@@ -160,7 +170,59 @@ export class Transport {
       this.position = t;
       this.requestFrame();
       this.emit();
+      if (this.scrubAudio) {
+        // The context only runs after a user gesture; until then scrubbing is silent.
+        const { context } = this.audio();
+        if (context.state === 'running') void this.scrub(t);
+        else void context.resume().catch(() => undefined);
+      }
     }
+  }
+
+  /** One short burst of the audio at `tick`, faded at both ends. A newer scrub replaces an older one. */
+  private async scrub(tick: Tick): Promise<void> {
+    const gen = ++this.scrubGen;
+    const ctx = this.ctx as AudioContext;
+    const [left, right] = await renderAudio(this.o.getProject(), { start: tick, end: tick + Math.round(SCRUB_SECONDS * TICKS_PER_SECOND) }, this.o.media);
+    if (gen !== this.scrubGen || this.playing || left.length === 0) return;
+    const edge = Math.min(240, left.length >> 1);
+    for (let i = 0; i < edge; i++) {
+      for (const ch of [left, right]) {
+        ch[i] = (ch[i] as number) * (i / edge);
+        ch[ch.length - 1 - i] = (ch[ch.length - 1 - i] as number) * (i / edge);
+      }
+    }
+    const buffer = ctx.createBuffer(2, left.length, ctx.sampleRate);
+    buffer.copyToChannel(left as Float32Array<ArrayBuffer>, 0);
+    buffer.copyToChannel(right as Float32Array<ArrayBuffer>, 1);
+    this.scrubNode?.disconnect();
+    const node = ctx.createBufferSource();
+    node.buffer = buffer;
+    node.connect(this.master as GainNode);
+    node.start();
+    this.scrubNode = node;
+    this.scrubs++;
+  }
+
+  /** Time of the audio being heard right now on the audio clock, or null before any playback. */
+  get audioTime(): number | null {
+    return this.ctx ? this.ctx.currentTime - (this.ctx.outputLatency || 0) : null;
+  }
+
+  /** Largest absolute sample on each side among the audio played between two audio-context times. */
+  peaksBetween(t0: number, t1: number): [number, number] {
+    const peak: [number, number] = [0, 0];
+    for (const s of this.segments) {
+      if (s.ctxEnd <= t0 || s.ctxStart >= t1 || s.left.length === 0) continue;
+      const perSecond = s.left.length / (s.ctxEnd - s.ctxStart);
+      const a = Math.max(0, Math.floor((t0 - s.ctxStart) * perSecond));
+      const b = Math.min(s.left.length, Math.ceil((t1 - s.ctxStart) * perSecond));
+      for (let i = a; i < b; i++) {
+        peak[0] = Math.max(peak[0], Math.abs(s.left[i] as number));
+        peak[1] = Math.max(peak[1], Math.abs(s.right[i] as number));
+      }
+    }
+    return peak;
   }
 
   /** Step by whole frames from the current frame; pauses first. */
@@ -213,9 +275,13 @@ export class Transport {
         // If rendering fell behind, start late rather than in the past; the clock follows the audio.
         const when = Math.max(this.scheduledUntil, ctx.currentTime + 0.02);
         if (left.length > 0) {
+          if (dir < 0) {
+            left.reverse();
+            right.reverse();
+          }
           const buffer = ctx.createBuffer(2, left.length, ctx.sampleRate);
-          buffer.copyToChannel((dir < 0 ? left.reverse() : left) as Float32Array<ArrayBuffer>, 0);
-          buffer.copyToChannel((dir < 0 ? right.reverse() : right) as Float32Array<ArrayBuffer>, 1);
+          buffer.copyToChannel(left as Float32Array<ArrayBuffer>, 0);
+          buffer.copyToChannel(right as Float32Array<ArrayBuffer>, 1);
           const node = ctx.createBufferSource();
           node.buffer = buffer;
           node.playbackRate.value = speed;
@@ -224,7 +290,7 @@ export class Transport {
           node.start(when);
           this.nodes.add(node);
         }
-        this.segments.push({ ctxStart: when, ctxEnd: when + seconds, tickStart: this.nextTick, tickEnd: to });
+        this.segments.push({ ctxStart: when, ctxEnd: when + seconds, tickStart: this.nextTick, tickEnd: to, left, right });
         while (this.segments.length > 64) this.segments.shift();
         this.scheduledUntil = when + seconds;
         this.nextTick = to;

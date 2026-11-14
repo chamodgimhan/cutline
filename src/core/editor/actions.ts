@@ -141,8 +141,8 @@ export const ACTIONS: readonly Action[] = [
   a('clip.split', 'Split at Playhead', 'Clip', ['Ctrl+K'], (s) =>
     s.history.execute(splitClips(s.project, s.ctx, s.selection.size ? { at: s.toFrame(s.playhead), ids: [...s.selection], linked: s.linked } : { at: s.toFrame(s.playhead) }))),
   a('clip.splitAll', 'Split All Tracks at Playhead', 'Clip', ['Ctrl+Shift+K'], (s) => s.history.execute(splitClips(s.project, s.ctx, { at: s.toFrame(s.playhead) }))),
-  a('clip.link', 'Link', 'Clip', ['Ctrl+L'], (s) => s.history.execute(linkClips(s.project, s.ctx, selected(s)))),
-  a('clip.unlink', 'Unlink', 'Clip', ['Ctrl+Shift+L'], (s) => s.history.execute(unlinkClips(s.project, s.ctx, selected(s)))),
+  a('clip.link', 'Link (Relink Audio)', 'Clip', ['Ctrl+L'], (s) => s.history.execute(linkClips(s.project, s.ctx, selected(s)))),
+  a('clip.unlink', 'Unlink (Detach Audio)', 'Clip', ['Ctrl+Shift+L'], (s) => s.history.execute(unlinkClips(s.project, s.ctx, selected(s)))),
   a('clip.enable', 'Enable / Disable', 'Clip', ['Shift+E'], (s) => s.history.execute(updateClips(s.project, s.ctx, selected(s), (c) => ({ ...c, enabled: !c.enabled }), 'Enable / disable'))),
   a('clip.nudgeLeft', 'Nudge Left One Frame', 'Clip', ['Alt+ArrowLeft'], (s) => s.history.execute(moveClips(s.project, s.ctx, { ids: selected(s), delta: -s.frame, linked: s.linked }))),
   a('clip.nudgeRight', 'Nudge Right One Frame', 'Clip', ['Alt+ArrowRight'], (s) => s.history.execute(moveClips(s.project, s.ctx, { ids: selected(s), delta: s.frame, linked: s.linked }))),

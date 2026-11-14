@@ -10,22 +10,9 @@ const FLOOR_DB = -60;
 export function metersPanel(app: App): HTMLElement {
   const canvas = h('canvas', { role: 'img', 'aria-label': 'Audio level meters' });
   const t = app.program.transport;
-  let analysers: AnalyserNode[] | null = null;
-  const buf = new Float32Array(1024);
   const hold = [0, 0];
   const level = [0, 0];
-
-  const connect = (): void => {
-    const { context, output } = t.audio();
-    const split = context.createChannelSplitter(2);
-    output.connect(split);
-    analysers = [0, 1].map((ch) => {
-      const a = context.createAnalyser();
-      a.fftSize = 1024;
-      split.connect(a, ch);
-      return a;
-    });
-  };
+  let last: number | null = null;
   const draw = (): void => {
     const w = canvas.clientWidth;
     const hgt = canvas.clientHeight;
@@ -52,15 +39,13 @@ export function metersPanel(app: App): HTMLElement {
     }
   };
   const tick = (): void => {
-    if (t.playing && !analysers) connect();
+    // Exact peaks: the largest sample among those played since the previous reading.
+    const now = t.playing ? t.audioTime : null;
+    const peaks = now !== null && last !== null ? t.peaksBetween(last, now) : [0, 0];
+    last = now;
     for (let ch = 0; ch < 2; ch++) {
-      let peak = 0;
-      if (analysers && t.playing) {
-        (analysers[ch] as AnalyserNode).getFloatTimeDomainData(buf);
-        for (let i = 0; i < buf.length; i++) peak = Math.max(peak, Math.abs(buf[i] as number));
-      }
-      level[ch] = peak;
-      hold[ch] = Math.max(peak, (hold[ch] as number) * 0.985); // peak hold decays slowly
+      level[ch] = peaks[ch] as number;
+      hold[ch] = Math.max(level[ch] as number, (hold[ch] as number) * 0.985); // peak hold decays slowly
     }
     draw();
     if (t.playing || hold[0]! > 0.001 || hold[1]! > 0.001) requestAnimationFrame(tick);

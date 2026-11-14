@@ -1,5 +1,6 @@
 // Entry point: builds the window (menu bar, resizable panels, status bar) around one App.
 import { App } from './app.ts';
+import { audioActions } from './audioActions.ts';
 import { binPanel } from './bin.ts';
 import { h, load, save } from './dom.ts';
 import { inspectorPanel } from './inspector.ts';
@@ -24,6 +25,7 @@ const panel = (title: string, body: HTMLElement, ...header: HTMLElement[]): HTML
 export function mount(root: HTMLElement): App {
   installStyles();
   const app = new App();
+  app.actions.push(...audioActions(app));
   app.actions.push({ id: 'help.shortcuts', label: 'Keyboard Shortcuts…', menu: 'Help', keys: ['Ctrl+Alt+K'], run: () => openShortcutEditor(app) });
 
   const saved = load<Layout>('cutline.layout', DEFAULT_LAYOUT);

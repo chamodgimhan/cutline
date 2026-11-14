@@ -1,9 +1,9 @@
 // Inspector: properties of the selected clip, or of the sequence when nothing is selected.
 import { updateClips } from '../core/commands/clips.ts';
-import { setSequenceProps } from '../core/commands/tracks.ts';
+import { setSequenceProps, setTrackProps } from '../core/commands/tracks.ts';
 import { evalParam, setValueAt } from '../core/keyframes.ts';
 import type { BlendMode, Clip, FitMode, VideoProps } from '../core/model.ts';
-import { formatTimecode } from '../core/time.ts';
+import { formatTimecode, TICKS_PER_SECOND } from '../core/time.ts';
 import type { App } from './app.ts';
 import { fill, framed, h } from './dom.ts';
 
@@ -61,6 +61,23 @@ export function inspectorPanel(app: App): HTMLElement {
         h('h3', {}, 'Crop'), ...crop('left'), ...crop('top'), ...crop('right'), ...crop('bottom'),
       );
     }
+    const a = c.audio;
+    const track = s.seq.tracks.find((t) => t.clips.some((x) => x.id === c.id));
+    if (a && track) {
+      const audio = (change: (p: NonNullable<Clip['audio']>, clip: Clip) => NonNullable<Clip['audio']>, label: string): void =>
+        edit((clip) => (clip.audio ? { ...clip, audio: change(clip.audio, clip) } : clip), label);
+      const seconds = (ticks: number): number => ticks / TICKS_PER_SECOND;
+      const fade = (v: number, clip: Clip): number => Math.min(clip.duration, Math.max(0, s.toFrameDelta(Math.round(v * TICKS_PER_SECOND))));
+      out.push(
+        h('h3', {}, 'Audio'),
+        ...row('Gain dB', number(evalParam(a.gain, local), (v) => audio((p, clip) => ({ ...p, gain: setValueAt(p.gain, Math.min(Math.max(s.playhead - clip.start, 0), clip.duration), Math.min(24, Math.max(-96, v))) }), 'Set gain'), 0.5)),
+        ...row('Fade in s', number(seconds(a.fadeIn), (v) => audio((p, clip) => ({ ...p, fadeIn: fade(v, clip) }), 'Set fade in'), 0.1)),
+        ...row('Fade out s', number(seconds(a.fadeOut), (v) => audio((p, clip) => ({ ...p, fadeOut: fade(v, clip) }), 'Set fade out'), 0.1)),
+        h('h3', {}, `Track ${track.name}`),
+        ...row('Track volume dB', number(track.volume, (v) => void s.run(() => setTrackProps(s.project, s.ctx, track.id, { volume: Math.min(24, Math.max(-96, v)) })), 0.5)),
+        ...row('Track pan', number(track.pan, (v) => void s.run(() => setTrackProps(s.project, s.ctx, track.id, { pan: Math.min(1, Math.max(-1, v)) })), 0.1)),
+      );
+    }
     return out;
   }
 
@@ -85,7 +102,7 @@ export function inspectorPanel(app: App): HTMLElement {
     const hits = s.selectedClips();
     const one = hits.length === 1 ? hits[0]?.clip : undefined;
     // Rebuild only when what is shown changes, and never under the user's cursor while typing.
-    const sig = one ? `${one.id}:${JSON.stringify([one.name, one.enabled, one.start, one.duration, one.video])}:${one.video && typeof one.video.opacity !== 'number' ? s.playhead : ''}` : `${hits.length}:${JSON.stringify([s.seq.name, s.seq.width, s.seq.height, s.seq.fps, s.seq.sampleRate])}`;
+    const sig = one ? `${one.id}:${JSON.stringify([one.name, one.enabled, one.start, one.duration, one.video, one.audio, s.seq.tracks.map((t) => [t.volume, t.pan])])}:${one.video && typeof one.video.opacity !== 'number' ? s.playhead : ''}` : `${hits.length}:${JSON.stringify([s.seq.name, s.seq.width, s.seq.height, s.seq.fps, s.seq.sampleRate])}`;
     if (sig === shown || (root.contains(document.activeElement) && document.activeElement?.tagName === 'INPUT' && shown.split(':')[0] === sig.split(':')[0])) return;
     shown = sig;
     fill(root, ...(one ? clipFields(one) : hits.length > 1 ? [h('div', { class: 'none' }, `${hits.length} clips selected.`)] : sequenceFields()));

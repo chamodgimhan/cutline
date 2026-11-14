@@ -34,9 +34,10 @@ export async function audioMix(): Promise<Record<string, number>> {
   const eng = await makeEngine(['clip_24']);
   const p = simpleProject(eng, 'clip_24', 2, 30, 320, 180);
   const want = new Int16Array(pcmBlock(48000, 2, 0, 96000).buffer);
-  const maxDiff = (got: Float32Array, ch: number, offset = 0, scale = 1): number => {
+  // Clip edges carry a 64-sample fade (the automatic edit crossfade), so exactness is checked away from them.
+  const maxDiff = (got: Float32Array, ch: number, offset = 0, scale = 1, from = 0, to = got.length): number => {
     let m = 0;
-    for (let i = 0; i < got.length; i++) m = Math.max(m, Math.abs((got[i] as number) - (((want[(i + offset) * 2 + ch] as number) / 32768) * scale)));
+    for (let i = from; i < to; i++) m = Math.max(m, Math.abs((got[i] as number) - (((want[(i + offset) * 2 + ch] as number) / 32768) * scale)));
     return m;
   };
   const whole = await renderAudio(p, { start: 0, end: 2 * S }, eng.media);
@@ -48,7 +49,7 @@ export async function audioMix(): Promise<Record<string, number>> {
   const two: Project = { ...p, sequences: [{ ...p.sequences[0]!, tracks: [...p.sequences[0]!.tracks, a2] }] };
   const sum = await renderAudio(two, { start: S / 2, end: S }, eng.media);
   let sumDiff = 0;
-  for (let i = 0; i < sum[0].length; i++) sumDiff = Math.max(sumDiff, Math.abs((sum[0][i] as number) - ((want[(i + 24000) * 2] as number) + (want[i * 2] as number)) / 32768));
+  for (let i = 64; i < sum[0].length; i++) sumDiff = Math.max(sumDiff, Math.abs((sum[0][i] as number) - ((want[(i + 24000) * 2] as number) + (want[i * 2] as number)) / 32768));
   const withTrack = (change: (i: number) => object): Project => ({ ...two, sequences: [{ ...two.sequences[0]!, tracks: two.sequences[0]!.tracks.map((t, i) => ({ ...t, ...change(i) })) }] });
   const muted = await renderAudio(withTrack((i) => (i === 2 ? { muted: true } : {})), { start: S / 2, end: S }, eng.media);
   const solo = await renderAudio(withTrack((i) => (i === 2 ? { solo: true } : {})), { start: S / 2, end: S }, eng.media);
@@ -56,9 +57,9 @@ export async function audioMix(): Promise<Record<string, number>> {
   const offline = await renderAudio(p, { start: 0, end: S / 10 }, eng.media);
   eng.media.dispose();
   return {
-    length: whole[0].length, left: maxDiff(whole[0], 0), right: maxDiff(whole[1], 1),
-    chunkLeft: Math.max(maxDiff(first[0], 0), maxDiff(second[0], 0, first[0].length)), chunkLength: first[0].length + second[0].length,
-    sum: sumDiff, muted: maxDiff(muted[0], 0, 24000), solo: maxDiff(solo[0], 0, 0),
+    length: whole[0].length, left: maxDiff(whole[0], 0, 0, 1, 64, 96000 - 64), right: maxDiff(whole[1], 1, 0, 1, 64, 96000 - 64),
+    chunkLeft: Math.max(maxDiff(first[0], 0, 0, 1, 64), maxDiff(second[0], 0, first[0].length, 1, 0, second[0].length - 64)), chunkLength: first[0].length + second[0].length,
+    sum: sumDiff, muted: maxDiff(muted[0], 0, 24000), solo: maxDiff(solo[0], 0, 0, 1, 64),
     offline: offline[0].reduce((m, v) => Math.max(m, Math.abs(v)), 0), empty: (await renderAudio(p, { start: S, end: S }, eng.media))[0].length,
   };
 }

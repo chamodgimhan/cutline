@@ -1,7 +1,7 @@
 # Cutline progress
 
 ## Phase
-Phase 4: Timeline and editing UI (starting)
+Phase 5: Audio (starting)
 
 ## Done
 - Setup: CLAUDE.md, SPEC.md, git.
@@ -9,11 +9,13 @@ Phase 4: Timeline and editing UI (starting)
 - Phase 1: time, model, commands (27 kinds), history, snapping, project file + v1 migration. 100 unit tests; property test 10,000 sequences x 12 steps green.
 - Phase 2: MP4/MOV demuxer, probe (fps, VFR, rotation, WAV, images), fingerprint, MediaLibrary (offline/relink), VideoSource (WebCodecs, bounded cache), AudioSource (PCM + WebCodecs), media worker (peaks, thumbnails). 118 unit tests; phase2 smoke green.
 - Phase 3: keyframes, render plan, WebGL2 compositor + Canvas 2D fallback, renderFrame, renderAudio (OfflineAudioContext), audio-clock Transport (play, pause, JKL, step, loop, quality), sourceProject for the source monitor. 140 unit tests; phase3 smoke and 10-minute drift green. Reviewed and audited 2026-11-14.
+- Phase 4: editor Session, 62 actions + shortcut map, timeline layout + tool gestures (pure, tested); UI in src/ui (no framework): menus, resizable panels, bin with picker/drag-drop import, source/program monitors, canvas timeline, inspector, meters, history, shortcut editor. 172 unit tests; phase4 smoke green.
 
 ## Next step
-Read RESUME.md first. Phase 4 slices 1-2 done and committed (src/core/editor: session, actions, shortcuts, layout, gestures; 172 tests). Next slice 3: UI in src/ui/ with no framework (app shell + index.html, theme CSS, resizable panels saved to localStorage, media bin with picker + drag-and-drop import, source/program monitors on Transport, timeline as one canvas using layout.ts + gestures.ts, inspector, meters, history, menus + context menus from ACTIONS, shortcut editor). Then slice 4: tools/smoke/phase4 (real pointer/key events per tool, every action via UI, 2,000-clip frame budget under 32 ms, typing in a field fires no shortcut). Carry-overs to do inside Phase 4 import: (a) refuse a file at import when VideoDecoder/AudioDecoder.isConfigSupported is false, with the plain message; (b) take image width/height from the decoded bitmap (EXIF-rotated photos). Carry-over for Phase 8: exported AAC needs its encoder delay removed or signalled (edit list), and an imported AAC file without an edit list plays about 44 ms late.
+Read RESUME.md first. Phase 5 (Audio) step 1: pure gain/fade/pan math + automatic edit crossfade + LUFS meter in src/core/audio/ with tests; then extend renderAudio (clip gain, fades, keyframed volume, track volume/pan), exact peak meters, audio scrub, normalise-to-target action, detach/relink audio (link/unlink exist), inspector audio fields, phase5 smoke (mixdown vs stored samples within 1 LSB, click alignment after 50 edits, no jump at cuts, meter = computed peak, LUFS within 0.2 LU). Carry-over for Phase 8: exported AAC needs its encoder delay removed or signalled; an imported AAC file without an edit list plays about 44 ms late.
 
 ## Budgets measured
+- Timeline with 2,000 clips: worst frame 24 ms, median 6 ms while scrolling (limit 32); paint script 1.3 ms.
 - Render: 2D fallback matches GL at 51-68 dB. 1080p scrub through renderFrame worst 80 ms. 1080p playback 29.2 of 30 fps (software GL). 10-min playback: audio/timeline error 0.02 ms, picture lag 0.12 frames, no drift, 7 frames dropped.
 - 2h open: node 125 ms / 1 MB of 444 MB read; browser ~50 ms. 1080p scrub worst 124 ms (limit 150), mean ~80 ms.
 
@@ -45,3 +47,6 @@ None.
 - Open video decoders are capped at 6, 64 MB of cached frames each; a failed open is cached until the media is relinked.
 - Text and adjustment layers are planned by planFrame but drawn from Phases 6 and 7.
 - Monitors: Phase 3 delivers Renderer + Transport + sourceProject; the monitor panels are built in Phase 4.
+- UI has no framework: timeline is one canvas, panels are plain DOM built with a small h() helper. Runs of clips narrower than 6 px are painted merged.
+- Import refuses files this machine cannot decode, and takes image size from the decoded bitmap (carry-overs from the Phase 3 review, done).
+- window.cutline = { app, timeline } is exposed for smoke tests.

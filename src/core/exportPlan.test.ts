@@ -10,7 +10,7 @@ import { eta, jobFrameTick, offlineInJobs, outputSize, planExport, PRESETS, type
 import { defaultTextProps, defaultVideoProps } from './model.ts';
 import { applyAffine, planFrame, viewWindow } from './render/plan.ts';
 import { project } from './testkit.ts';
-import { frameTicks, TICKS_PER_SECOND as S } from './time.ts';
+import { frameTicks } from './time.ts';
 
 const F = frameTicks({ num: 30, den: 1 });
 const settings = (extra: Partial<ExportSettings> = {}): ExportSettings => ({ format: 'mp4', preset: 'sequence', range: 'sequence', quality: 'medium', name: 'My Film', ...extra });

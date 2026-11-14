@@ -56,7 +56,8 @@ export interface ExportJob {
 }
 
 const even = (n: number): number => Math.max(2, Math.round(n / 2) * 2);
-const safeName = (s: string): string => s.replace(/[<>:"/\\|?*\u0000-\u001f]/g, '_').trim() || 'export';
+/** A file name with nothing a file system rejects. */
+const safeName = (s: string): string => [...s].map((ch) => (ch.charCodeAt(0) < 32 || '<>:"/\\|?*'.includes(ch) ? '_' : ch)).join('').trim() || 'export';
 
 /** Output size for a preset. Video encoders need even dimensions. */
 export function outputSize(project: Project, s: ExportSettings): { width: number; height: number } {

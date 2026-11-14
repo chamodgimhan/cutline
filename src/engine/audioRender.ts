@@ -2,6 +2,7 @@
 // Playback and export both use it. Mixing runs in an OfflineAudioContext.
 import { clipAudio, dbToGain, EDGE_RAMP } from '../core/audio/envelope.ts';
 import { LoudnessMeter } from '../core/audio/loudness.ts';
+import { timeStretch } from '../core/audio/timestretch.ts';
 import { clipEnd, getMedia, getSequence, sourceSpan, type Clip, type Id, type Project, type Sequence, type Track } from '../core/model.ts';
 import { sampleToTick, TICKS_PER_SECOND, tickToSample, type Tick } from '../core/time.ts';
 import type { MediaSources } from './mediaSources.ts';
@@ -32,21 +33,31 @@ async function clipNode(ctx: OfflineAudioContext, project: Project, media: Media
   const inFrame = tickToSample(c.sourceIn, SR);
   // Reversed clips read backwards from the source out point.
   const first = c.reverse ? tickToSample(c.sourceIn + sourceSpan(c, c.duration), SR) - Math.round((a - shape.start) * perOut) - need : inFrame + Math.round((a - shape.start) * perOut);
-  const data = await source.read(first - PAD, need + 2 * PAD);
-  const buffer = ctx.createBuffer(2, need + 2 * PAD, SR);
+  let data = await source.read(first - PAD, need + 2 * PAD);
+  let step = perOut; // source frames per output sample, as held in the buffer
+  if (c.pitchKeep && speed !== 1) {
+    // Keep pitch: stretch the samples themselves and play them at normal rate.
+    // shortcut: each chunk is stretched on its own, so a faint artefact is possible where 0.4 s chunks join; upgrade to a per-clip streaming stretcher if it is audible.
+    if (c.reverse) data.forEach((ch) => ch.reverse());
+    data = timeStretch(data, speed, SR);
+    step = SR / R;
+  }
+  const frames = data[0]?.length ?? 0;
+  const lead = Math.round((PAD * step) / perOut);
+  const buffer = ctx.createBuffer(2, Math.max(1, frames), SR);
   // Gain (clip gain, fades, edit crossfade) is applied here per sample; mono is spread to both sides.
-  const gains = new Float32Array(need + 2 * PAD);
-  for (let j = 0; j < gains.length; j++) gains[j] = shape.gainAt(a + (j - PAD) / perOut);
+  const gains = new Float32Array(frames);
+  for (let j = 0; j < frames; j++) gains[j] = shape.gainAt(a + (j - lead) / step);
   for (let ch = 0; ch < 2; ch++) {
     const src = (data[Math.min(ch, data.length - 1)] as Float32Array).slice();
-    if (c.reverse) src.reverse();
+    if (c.reverse && step === perOut) src.reverse();
     for (let j = 0; j < src.length; j++) src[j] = (src[j] as number) * (gains[j] as number);
     buffer.copyToChannel(src as Float32Array<ArrayBuffer>, ch);
   }
   const node = ctx.createBufferSource();
   node.buffer = buffer;
-  node.playbackRate.value = speed;
-  node.start((a - n0) / R, PAD / SR, need / SR);
+  node.playbackRate.value = step === perOut ? speed : 1;
+  node.start((a - n0) / R, lead / SR, ((b - a) * step) / SR);
   return node;
 }
 
@@ -62,8 +73,6 @@ export async function renderAudio(project: Project, range: { start: Tick; end: T
   const length = Math.max(0, n1 - n0);
   if (length === 0) return [new Float32Array(0), new Float32Array(0)];
   const ctx = new OfflineAudioContext(2, length, R);
-  // Clips reach half a crossfade past their edges, so look that far outside the range for them.
-  const reach = sampleToTick(EDGE_RAMP, R);
   const jobs: Promise<void>[] = [];
   for (const track of audibleTracks(seq)) {
     const out = ctx.createGain();
@@ -74,6 +83,8 @@ export async function renderAudio(project: Project, range: { start: Tick; end: T
       pan.pan.value = Math.min(1, Math.max(-1, track.pan));
       out.connect(pan).connect(ctx.destination);
     }
+    // Clips reach past their edges: half an edit crossfade, or a whole audio crossfade transition.
+    const reach = sampleToTick(EDGE_RAMP, R) + Math.max(0, ...track.clips.map((x) => x.transitionIn?.duration ?? 0));
     for (const c of track.clips) {
       if (!c.enabled || !c.audio || clipEnd(c) + reach <= range.start || c.start - reach >= range.end) continue;
       jobs.push(clipNode(ctx, project, media, c, n0, n1).then((node) => void node?.connect(out), () => undefined));

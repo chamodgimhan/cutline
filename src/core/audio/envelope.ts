@@ -34,9 +34,15 @@ export interface ClipAudio {
 export function clipAudio(project: Project, c: Clip, rate: number): ClipAudio {
   const start = tickToSample(c.start, rate);
   const end = tickToSample(clipEnd(c), rate);
-  const room = (ticks: number): number => (ticks === Infinity ? HALF : Math.min(HALF, tickToSample(ticks, rate, 'floor')));
-  const pre = Math.min(room(headRoom(project, c)), start);
-  const post = room(tailRoom(project, c));
+  const samples = (ticks: number, cap: number): number => (ticks === Infinity ? cap : Math.min(cap, tickToSample(ticks, rate, 'floor')));
+  // Audio crossfade transition: this clip fades in over its own start, and the clip before it
+  // keeps playing into its handle underneath. Equal-power curves, so the level holds across the join.
+  const track = project.sequences.flatMap((q) => q.tracks).find((t) => t.clips.includes(c));
+  const next = track?.clips[track.clips.indexOf(c) + 1];
+  const xIn = c.transitionIn?.type === 'crossfade' ? tickToSample(c.transitionIn.duration, rate) : 0;
+  const xOutWanted = next && next.start === clipEnd(c) && next.transitionIn?.type === 'crossfade' ? tickToSample(next.transitionIn.duration, rate) : 0;
+  const pre = xIn ? 0 : Math.min(samples(headRoom(project, c), HALF), start);
+  const post = xOutWanted ? samples(tailRoom(project, c), xOutWanted) : samples(tailRoom(project, c), HALF);
   const fadeIn = tickToSample(c.audio?.fadeIn ?? 0, rate);
   const fadeOut = tickToSample(c.audio?.fadeOut ?? 0, rate);
   const gain = c.audio?.gain ?? 0;
@@ -45,8 +51,12 @@ export function clipAudio(project: Project, c: Clip, rate: number): ClipAudio {
     from: start - pre, to: end + post, start,
     gainAt(n) {
       let g = fixed ?? dbToGain(evalParam(gain, sampleToTick(Math.min(Math.max(n - start, 0), end - start), rate)));
-      if (n < start + HALF) g *= Math.max(0, (n - (start - pre)) / (pre + HALF));
-      if (n >= end - HALF) g *= Math.max(0, (end + post - n) / (post + HALF));
+      if (xIn) {
+        if (n < start + xIn) g *= Math.sin((Math.max(0, n - start) / xIn) * (Math.PI / 2));
+      } else if (n < start + HALF) g *= Math.max(0, (n - (start - pre)) / (pre + HALF));
+      if (xOutWanted) {
+        if (n >= end) g *= Math.cos((Math.min(xOutWanted, n - end) / xOutWanted) * (Math.PI / 2));
+      } else if (n >= end - HALF) g *= Math.max(0, (end + post - n) / (post + HALF));
       if (fadeIn > 0 && n < start + fadeIn) g *= Math.max(0, (n - start) / fadeIn);
       if (fadeOut > 0 && n > end - fadeOut) g *= Math.max(0, (end - n) / fadeOut);
       return g;

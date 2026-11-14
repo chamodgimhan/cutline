@@ -5,6 +5,7 @@ const SUITES: Record<string, () => Promise<{ run: () => Promise<string[]> }>> = 
   phase3: () => import('./phase3.ts'),
   phase4: () => import('./phase4.ts'),
   phase5: () => import('./phase5.ts'),
+  phase6: () => import('./phase6.ts'),
   drift: () => import('./drift.ts'),
 };
 

@@ -1,9 +1,9 @@
 // Clip commands: add, remove, move, split, property updates, link and unlink.
-import { splitClipAt } from '../clipmath.ts';
+import { isUnbounded, splitClipAt } from '../clipmath.ts';
 import { EditError, type Command } from '../command.ts';
 import { Draft, type EditCtx } from '../draft.ts';
-import { clipEnd, type Clip, type Id, type Project } from '../model.ts';
-import type { Tick } from '../time.ts';
+import { clipEnd, sourceSpan, sourceTimeAt, type Clip, type Id, type Project } from '../model.ts';
+import { mulDiv, type Rational, type Tick } from '../time.ts';
 
 export interface Placement {
   trackId: Id;
@@ -111,4 +111,62 @@ export function unlinkClips(p: Project, ctx: EditCtx, ids: readonly Id[]): Comma
   if (hits.length === 0) throw new EditError('Those clips are not linked.');
   for (const { track, clip } of hits) d.put(track.id, { ...clip, linkId: null });
   return d.build('Unlink');
+}
+
+export interface SpeedArgs {
+  id: Id;
+  speed: Rational;
+  reverse?: boolean;
+  pitchKeep?: boolean;
+  /** Move later clips so the clip's new length neither overlaps nor leaves a gap. */
+  ripple?: boolean;
+  linked?: boolean;
+  /** Durations are rounded down to a multiple of this (one frame). */
+  frame?: Tick;
+}
+
+/**
+ * Change playback speed. The clip keeps showing the same stretch of source, so it gets
+ * shorter or longer; without ripple it stops at the next clip.
+ */
+export function setClipSpeed(p: Project, ctx: EditCtx, args: SpeedArgs): Command {
+  if (args.speed.num <= 0 || args.speed.den <= 0 || args.speed.num / args.speed.den > 16 || args.speed.num / args.speed.den < 1 / 16) throw new EditError('Speed must be between 6.25% and 1600%.');
+  const d = new Draft(p, ctx);
+  const frame = args.frame ?? 1;
+  const hits = d.linked(args.id, args.linked ?? true);
+  const group = new Set(hits.map((h) => h.clip.id));
+  const oldEnd = Math.max(...hits.map((h) => clipEnd(h.clip)));
+  let newEnd = 0;
+  const next = hits.map((h) => {
+    const c = h.clip;
+    let duration = c.duration;
+    if (!isUnbounded(p, c)) {
+      duration = Math.max(frame, Math.floor(mulDiv(sourceSpan(c, c.duration), args.speed.den, args.speed.num, 'floor') / frame) * frame);
+      if (!args.ripple) {
+        const after = d.clips(h.track.id).find((x) => x.start >= clipEnd(c) && !group.has(x.id));
+        if (after) duration = Math.min(duration, after.start - c.start);
+      }
+    }
+    newEnd = Math.max(newEnd, c.start + duration);
+    return { trackId: h.track.id, clip: { ...c, duration, speed: args.speed, reverse: args.reverse ?? c.reverse, pitchKeep: args.pitchKeep ?? c.pitchKeep } };
+  });
+  if (args.ripple && newEnd !== oldEnd) d.shiftFrom(oldEnd, newEnd > oldEnd ? newEnd - oldEnd : -Math.min(oldEnd - newEnd, d.maxLeftShift(oldEnd, group)), group);
+  for (const n of next) d.put(n.trackId, n.clip);
+  return d.build('Change speed');
+}
+
+/** Freeze frame: from `at` to the clip's end, hold the picture shown at `at` (linked audio goes silent). */
+export function freezeFrame(p: Project, ctx: EditCtx, args: { id: Id; at: Tick; linked?: boolean }): Command {
+  const d = new Draft(p, ctx);
+  let count = 0;
+  for (const { track, clip } of d.linked(args.id, args.linked ?? true)) {
+    if (args.at <= clip.start || args.at >= clipEnd(clip)) continue;
+    const held = sourceTimeAt(clip, args.at);
+    const [left, right] = splitClipAt(p, clip, args.at, ctx.newId());
+    d.put(track.id, left);
+    d.put(track.id, { ...right, sourceIn: held, freeze: true, reverse: false, linkId: null });
+    count++;
+  }
+  if (count === 0) throw new EditError('Put the playhead inside the clip to freeze a frame.');
+  return d.build('Freeze frame');
 }

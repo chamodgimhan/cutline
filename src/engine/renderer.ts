@@ -1,6 +1,6 @@
 // renderFrame: the single path from a project and a time to pixels. Preview and export both use it.
 import { getMedia, type Id, type Project } from '../core/model.ts';
-import { planFrame, type LayerPlan } from '../core/render/plan.ts';
+import { pictureLayers, planFrame, type LayerPlan } from '../core/render/plan.ts';
 import type { Tick } from '../core/time.ts';
 import { Canvas2dCompositor } from './compositor/canvas2d.ts';
 import { GlCompositor, type Compositor, type LayerImage } from './compositor/gl.ts';
@@ -42,9 +42,10 @@ export class Renderer {
   /** Draw the sequence at `tick` onto the canvas. */
   async renderFrame(project: Project, tick: Tick, scale: PreviewScale = 1, seqId?: Id): Promise<void> {
     const plan = planFrame(project, tick, seqId);
-    const loaded = await Promise.all(plan.layers.map((l) => this.image(project, l)));
+    const layers = pictureLayers(plan).filter((l) => l.kind === 'media');
+    const loaded = await Promise.all(layers.map((l) => this.image(project, l)));
     try {
-      this.compositor.render(plan, loaded.map((l) => l.image), scale);
+      this.compositor.render(plan, new Map(layers.map((l, i) => [l, (loaded[i] as { image: LayerImage }).image])), scale);
     } finally {
       for (const l of loaded) l.close?.();
     }

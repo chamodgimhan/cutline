@@ -1,7 +1,7 @@
 // Frame plan: which layers are visible at a tick and exactly where they go.
 // Pure geometry; the compositor (GL or 2D) only executes the plan.
 import { evalParam } from '../keyframes.ts';
-import { clipAt, getMedia, getSequence, sourceSpan, type BlendMode, type Clip, type FitMode, type Id, type Project } from '../model.ts';
+import { clipAt, getMedia, getSequence, sourceSpan, type BlendMode, type Clip, type FitMode, type Id, type Project, type Sequence, type Track } from '../model.ts';
 import type { Tick } from '../time.ts';
 
 /** 2D affine map: x' = a*u + c*v + e, y' = b*u + d*v + f. */
@@ -25,6 +25,11 @@ export interface LayerPlan {
   /** Visible part of the upright picture as [u0, v0, u1, v1]. */
   uv: [number, number, number, number];
   clip: Clip;
+  /**
+   * Set while a transition is running. `incoming`: this layer is arriving and `outgoing` (if any) is the clip
+   * it replaces. Otherwise this layer is leaving to nothing. Progress runs 0..1.
+   */
+  transition: null | { type: string; progress: number; outgoing: LayerPlan | null; incoming: boolean };
 }
 
 export interface FramePlan {
@@ -71,6 +76,26 @@ export function layerMatrix(c: Clip, local: Tick, boxW: number, boxH: number, W:
   };
 }
 
+function layerOf(project: Project, seq: Sequence, track: Track, c: Clip, local: Tick): LayerPlan | null {
+  if (!c.enabled || !c.video) return null;
+  const opacity = Math.min(1, Math.max(0, evalParam(c.video.opacity, local)));
+  let box: [number, number] = [seq.width, seq.height];
+  let rotation: LayerPlan['rotation'] = 0;
+  const media = getMedia(project, c.mediaId);
+  if (c.kind === 'video') {
+    if (!media?.video) return null;
+    rotation = media.video.rotation;
+    const swap = rotation === 90 || rotation === 270;
+    box = fitBox(c.video.fit, swap ? media.video.height : media.video.width, swap ? media.video.width : media.video.height, seq.width, seq.height);
+  }
+  const geo = layerMatrix(c, local, box[0], box[1], seq.width, seq.height);
+  if (!geo) return null;
+  return {
+    clipId: c.id, trackId: track.id, kind: c.kind === 'video' ? 'media' : c.kind === 'text' ? 'text' : 'adjust', mediaId: c.mediaId,
+    sourceTime: media?.kind === 'image' ? 0 : clipSourceTime(c, local), localTime: local, rotation, opacity, blend: c.video.blend, ...geo, clip: c, transition: null,
+  };
+}
+
 /** Layers visible at `tick`, bottom first. */
 export function planFrame(project: Project, tick: Tick, seqId?: Id): FramePlan {
   const seq = getSequence(project, seqId);
@@ -78,28 +103,27 @@ export function planFrame(project: Project, tick: Tick, seqId?: Id): FramePlan {
   for (const track of seq.tracks) {
     if (track.kind !== 'video' || track.hidden) continue;
     const c = clipAt(track, tick);
-    if (!c || !c.enabled || !c.video) continue;
-    const local = tick - c.start;
-    const opacity = Math.min(1, Math.max(0, evalParam(c.video.opacity, local)));
-    if (opacity <= 0 && c.kind !== 'adjust') continue;
-    let box: [number, number] = [seq.width, seq.height];
-    let rotation: LayerPlan['rotation'] = 0;
-    const media = getMedia(project, c.mediaId);
-    if (c.kind === 'video') {
-      if (!media?.video) continue;
-      rotation = media.video.rotation;
-      const swap = rotation === 90 || rotation === 270;
-      box = fitBox(c.video.fit, swap ? media.video.height : media.video.width, swap ? media.video.width : media.video.height, seq.width, seq.height);
+    if (!c) continue;
+    const layer = layerOf(project, seq, track, c, tick - c.start);
+    if (!layer) continue;
+    const tin = c.transitionIn;
+    const tout = c.transitionOut;
+    if (tin && tick < c.start + tin.duration) {
+      // The outgoing clip keeps running past the cut (into its handle, or holding its last frame) under the incoming one.
+      const prev = track.clips[track.clips.indexOf(c) - 1];
+      const outgoing = prev && prev.start + prev.duration === c.start ? layerOf(project, seq, track, prev, prev.duration + (tick - c.start)) : null;
+      layer.transition = { type: tin.type, progress: (tick - c.start) / tin.duration, outgoing, incoming: true };
+    } else if (tout && tick >= c.start + c.duration - tout.duration) {
+      layer.transition = { type: tout.type, progress: (tick - (c.start + c.duration - tout.duration)) / tout.duration, outgoing: null, incoming: false };
     }
-    const geo = layerMatrix(c, local, box[0], box[1], seq.width, seq.height);
-    if (!geo) continue;
-    layers.push({
-      clipId: c.id, trackId: track.id, kind: c.kind === 'video' ? 'media' : c.kind === 'text' ? 'text' : 'adjust', mediaId: c.mediaId,
-      sourceTime: media?.kind === 'image' ? 0 : clipSourceTime(c, local), localTime: local, rotation, opacity, blend: c.video.blend, ...geo, clip: c,
-    });
+    if (layer.opacity <= 0 && layer.kind !== 'adjust' && !layer.transition) continue;
+    layers.push(layer);
   }
   return { width: seq.width, height: seq.height, layers };
 }
+
+/** Every layer that needs a picture, including clips that are only visible as the outgoing side of a transition. */
+export const pictureLayers = (plan: FramePlan): LayerPlan[] => plan.layers.flatMap((l) => (l.transition?.outgoing ? [l.transition.outgoing, l] : [l]));
 
 /** Inverse of an affine map, or null when it is degenerate. */
 export function invertAffine(m: Affine): Affine | null {

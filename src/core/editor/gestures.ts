@@ -1,6 +1,8 @@
 // Tool gestures: a press on the timeline starts one, moves update a live preview,
 // release commits it as a single undo step. Pure: pixels come in through a Hit.
-import { splitClips, moveClips } from '../commands/clips.ts';
+import { splitClips, moveClips, updateClips } from '../commands/clips.ts';
+import { moveKey } from '../keyframes.ts';
+import { keyNear, laneKeyFor, laneParam, withLaneParam } from './lane.ts';
 import { rippleTrim, rollEdit, slideClip, slipClip, trimClip } from '../commands/trim.ts';
 import { EditError, type Command } from '../command.ts';
 import { clipEnd, type Id } from '../model.ts';
@@ -27,6 +29,9 @@ export interface Gesture {
 
 const SNAP_PX = 8;
 const DRAG_PX = 3;
+/** Height of the keyframe lane at the bottom of a clip, and how close a press must be to a key. */
+export const LANE_PX = 14;
+const KEY_GRAB_PX = 6;
 
 /** A gesture that edits the project: each move replaces the previous preview. */
 function editGesture(s: Session, label: string, build: (hit: Hit, g: Gesture) => Command | null): Gesture {
@@ -139,6 +144,23 @@ export function beginGesture(s: Session, hit: Hit, mods: Mods, m: Metrics = DEFA
   const id = clip.id;
   const edge = hit.edge;
   const grabbed = edge === 'out' ? clipEnd(clip) : clip.start;
+
+  // A keyframe in the lane along the bottom of a selected clip: drag it in time. Checked before the
+  // edges, so a key near the start of a clip can still be grabbed.
+  const row = rows(s.seq, m).find((r) => r.track.id === hit.trackId);
+  const lane = laneKeyFor(clip, s.laneKey);
+  if (s.tool === 'select' && row && lane && s.selection.has(id) && hit.y - m.rulerHeight + s.view.scrollY > row.y + row.height - LANE_PX) {
+    const key = keyNear(clip, lane, hit.tick - clip.start, pxToTicks(KEY_GRAB_PX, s.view));
+    if (key) {
+      return editGesture(s, 'Move keyframe', (h) => {
+        const to = Math.min(clip.duration, Math.max(0, s.toFrameDelta(key.t + (h.tick - hit.tick))));
+        return updateClips(s.project, s.ctx, [id], (c) => {
+          const p = laneParam(c, lane);
+          return p ? withLaneParam(c, lane, moveKey(p, key.t, to)) : c;
+        }, 'Move keyframe');
+      });
+    }
+  }
 
   if (edge && (s.tool === 'select' || s.tool === 'ripple' || s.tool === 'roll')) {
     if (!s.selection.has(id)) s.select([id]);

@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { checkInvariants } from '../invariants.ts';
-import { makeClip, makeTrack, type Project } from '../model.ts';
+import { makeKey } from '../keyframes.ts';
+import { defaultVideoProps, makeClip, makeTrack, type Project } from '../model.ts';
 import { layout, lock, project } from '../testkit.ts';
 import { frameTicks, TICKS_PER_SECOND as S } from '../time.ts';
 import { beginGesture, cursorFor, type Mods } from './gestures.ts';
+import { keyNear, laneKeyFor } from './lane.ts';
 import { hitTest, rows, tickAt, visibleRange, xOf, type Hit } from './layout.ts';
 import { Session, type Tool } from './session.ts';
 
@@ -201,6 +203,25 @@ describe('tool gestures', () => {
     drag(w, 'select', [45, row('V1', w)], [[80, row('V1', w)]]);
     expect(frames(w)).toEqual([[30, 30, 30]]);
     expect(w.history.canUndo).toBe(false);
+  });
+
+  it('drags a keyframe in the lane of a selected clip, in whole frames, inside the clip', () => {
+    const keys = { keys: [makeKey(5 * F, 0.2), makeKey(20 * F, 1)] };
+    const s = session(project({ V1: [['a', 30 * F, 30 * F, 30 * F, { video: { ...defaultVideoProps(), opacity: keys } }]] }, 600 * F));
+    s.select(['a']);
+    const laneY = 24 + 56 - 6; // bottom band of the first row
+    drag(s, 'select', [35, laneY], [[42, laneY]]);
+    const opacity = s.seq.tracks[0]!.clips[0]!.video!.opacity as { keys: { t: number }[] };
+    expect(opacity.keys.map((k) => k.t / F)).toEqual([12, 20]);
+    expect(s.history.undoLabel).toBe('Move keyframe');
+    expect(layout(s.project).V1).toEqual([['a', 30 * F, 30 * F, 30 * F]]);
+    drag(s, 'select', [42, laneY], [[500, laneY]]); // cannot leave the clip, cannot land on another key
+    expect((s.seq.tracks[0]!.clips[0]!.video!.opacity as { keys: { t: number }[] }).keys.map((k) => k.t / F)).toEqual([20, 30]);
+    // Away from a key, the lane band still moves the clip.
+    drag(s, 'select', [50, 50], [[60, 50]]);
+    expect(layout(s.project).V1?.[0]?.[1]).toBe(40 * F);
+    expect(keyNear(s.seq.tracks[0]!.clips[0]!, 'opacity', 21 * F, 2 * F)?.t).toBe(20 * F);
+    expect(laneKeyFor(s.seq.tracks[0]!.clips[0]!, 'gain')).toBe('opacity');
   });
 
   it('chooses a cursor per tool and target', () => {

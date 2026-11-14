@@ -1,5 +1,5 @@
 // Action registry: every menu item, button and shortcut is one of these.
-import { addClips, linkClips, moveClips, removeClips, splitClips, unlinkClips, updateClips, type Placement } from '../commands/clips.ts';
+import { addClips, freezeFrame, linkClips, moveClips, removeClips, splitClips, unlinkClips, updateClips, type Placement } from '../commands/clips.ts';
 import { extractRange, insertClips, liftRange, overwriteClips, rippleDelete } from '../commands/range.ts';
 import { addMarker, addTrack, moveTrack, removeMarker, removeTrack, setRange, setTrackProps } from '../commands/tracks.ts';
 import { EditError } from '../command.ts';
@@ -146,6 +146,7 @@ export const ACTIONS: readonly Action[] = [
   a('clip.enable', 'Enable / Disable', 'Clip', ['Shift+E'], (s) => s.history.execute(updateClips(s.project, s.ctx, selected(s), (c) => ({ ...c, enabled: !c.enabled }), 'Enable / disable'))),
   a('clip.nudgeLeft', 'Nudge Left One Frame', 'Clip', ['Alt+ArrowLeft'], (s) => s.history.execute(moveClips(s.project, s.ctx, { ids: selected(s), delta: -s.frame, linked: s.linked }))),
   a('clip.nudgeRight', 'Nudge Right One Frame', 'Clip', ['Alt+ArrowRight'], (s) => s.history.execute(moveClips(s.project, s.ctx, { ids: selected(s), delta: s.frame, linked: s.linked }))),
+  a('clip.freeze', 'Freeze Frame at Playhead', 'Clip', ['Shift+F'], (s) => s.history.execute(freezeFrame(s.project, s.ctx, { id: selected(s)[0] as Id, at: s.toFrame(s.playhead), linked: s.linked }))),
   a('clip.linkedSelection', 'Linked Selection', 'Clip', ['Shift+L'], (s) => {
     s.linked = !s.linked;
     s.emit();

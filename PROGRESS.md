@@ -1,7 +1,7 @@
 # Cutline progress
 
 ## Phase
-Phase 6: Keyframes, effects, transitions, speed (starting)
+Phase 7: Titles and captions (starting)
 
 ## Done
 - Setup: CLAUDE.md, SPEC.md, git.
@@ -11,9 +11,10 @@ Phase 6: Keyframes, effects, transitions, speed (starting)
 - Phase 3: keyframes, render plan, WebGL2 compositor + Canvas 2D fallback, renderFrame, renderAudio (OfflineAudioContext), audio-clock Transport (play, pause, JKL, step, loop, quality), sourceProject for the source monitor. 140 unit tests; phase3 smoke and 10-minute drift green. Reviewed and audited 2026-11-14.
 - Phase 4: editor Session, 62 actions + shortcut map, timeline layout + tool gestures (pure, tested); UI in src/ui (no framework): menus, resizable panels, bin with picker/drag-drop import, source/program monitors, canvas timeline, inspector, meters, history, shortcut editor. 172 unit tests; phase4 smoke green.
 - Phase 5: clip gain, fades, keyframed gain, track volume/pan, automatic 128-sample edit crossfade, LUFS meter (BS.1770), normalise, exact peak meters, audio scrub, inspector audio fields. 181 unit tests; phase5 smoke green.
+- Phase 6: 11 effects (GL passes, ordered stacks), adjustment clips, 5 video transitions + audio crossfade, speed/reverse/freeze/pitch keep (WSOLA), keyframe lane + inspector sections. 197 unit tests; phase6 smoke green (25 stored hashes in fixtures/effect-hashes.json).
 
 ## Next step
-Read RESUME.md first. Phase 6 step 1: effects as pure definitions (src/core/effects.ts: exposure, contrast, saturation, temperature/tint, curves, LUT .cube parser, blur, sharpen, vignette, chroma key, flip) + GL shader passes in the compositor with ordered stacks and adjustment clips; then transitions (cross dissolve, dip to black/white, wipe, slide, audio crossfade), speed (constant, reverse, freeze, pitch keep), keyframe lane in the timeline, inspector effect stack UI, phase6 smoke (frame hash per effect/transition, stack order matters, speed keeps A/V sync). Keyframe engine (linear/hold/bezier + edits) already exists with tests in src/core/keyframes.ts. Carry-over for Phase 8: exported AAC needs its encoder delay removed or signalled; an imported AAC file without an edit list plays about 44 ms late.
+Read RESUME.md first. Phase 7 step 1: pure caption code in src/core/captions.ts (SRT + VTT parse/serialise incl. malformed input, cue rules: no overlap, minimum duration, split, merge, shift) with tests; then text rendering (OffscreenCanvas 2D -> layer image for kind 'text' and burned-in captions; bundled open-licence fonts under assets/fonts with licence files), text/caption inspector fields, caption track editing on the timeline (cues are clips of kind 'caption'), SRT/VTT import/export actions, speech-to-text provider interface (control hidden with no provider), phase7 smoke (burned-in caption frame hashes). Compositor already accepts kind 'text' layers via the images map; planFrame must add caption layers when burn-in is on. Carry-over for Phase 8: exported AAC needs its encoder delay removed or signalled; an imported AAC file without an edit list plays about 44 ms late.
 
 ## Budgets measured
 - Audio: mixdown within 0.001 LSB of an independent calculation; largest step at a cut 0.032 (unfaded 0.244); after 50 edits clicks within 0.042 ms of their frame; fixture loudness -14.28 LUFS (reference -14.29).
@@ -53,3 +54,6 @@ Read RESUME.md first. Phase 6 step 1: effects as pure definitions (src/core/effe
 - Import refuses files this machine cannot decode, and takes image size from the decoded bitmap (carry-overs from the Phase 3 review, done).
 - window.cutline = { app, timeline } is exposed for smoke tests.
 - Audio gain is applied per sample in JS before the OfflineAudioContext mix; mono is spread to both sides; track pan uses StereoPannerNode. Meters read the scheduled samples, not an analyser.
+- Transitions start at the cut: the outgoing clip runs on into its handle (or holds its last frame) under the incoming one. Canvas 2D fallback draws only exposure/contrast/saturation/blur/flip and shows every transition as a dissolve.
+- Pitch keep stretches each 0.4 s audio chunk on its own (marked `shortcut:` in audioRender.ts).
+- The inspector rebuilds on change and restores focus and uncommitted text.

@@ -1,5 +1,7 @@
 // Timeline painting. Draws only what is visible, so cost depends on the view, not the project size.
-import type { Gesture } from '../core/editor/gestures.ts';
+import { LANE_PX, type Gesture } from '../core/editor/gestures.ts';
+import { laneKeyFor, laneParam } from '../core/editor/lane.ts';
+import { isAnimated } from '../core/keyframes.ts';
 import { rows, tickAt, visibleRange, xOf, type Metrics } from '../core/editor/layout.ts';
 import { clipEnd, getMedia, sourceTimeAt, type Clip, type MediaAsset } from '../core/model.ts';
 import { formatTimecode, TICKS_PER_SECOND, type Tick } from '../core/time.ts';
@@ -109,6 +111,25 @@ export class TimelinePainter {
     ctx.globalAlpha = 1;
   }
 
+  /** Keyframes of the lane property along the bottom of a selected clip. */
+  private lane(ctx: CanvasRenderingContext2D, c: Clip, y: number): void {
+    const s = this.app.session;
+    const key = laneKeyFor(c, s.laneKey);
+    const p = key && laneParam(c, key);
+    if (!p || !isAnimated(p)) return;
+    const cy = y + this.m.trackHeight - LANE_PX / 2 - 2;
+    ctx.fillStyle = color.accent;
+    for (const k of p.keys) {
+      const x = xOf(c.start + k.t, s.view);
+      ctx.beginPath();
+      ctx.moveTo(x, cy - 5);
+      ctx.lineTo(x + 5, cy);
+      ctx.lineTo(x, cy + 5);
+      ctx.lineTo(x - 5, cy);
+      ctx.fill();
+    }
+  }
+
   private ruler(ctx: CanvasRenderingContext2D, w: number): void {
     const s = this.app.session;
     ctx.fillStyle = color.bg2;
@@ -195,6 +216,7 @@ export class TimelinePainter {
       for (const c of picked) {
         const box = this.box(c, y, w);
         ctx.strokeRect(box.left + 1, box.top + 1, Math.max(1, box.width - 2), box.h - 2);
+        this.lane(ctx, c, y);
       }
       if (row.track.locked) {
         ctx.fillStyle = color.overlay;

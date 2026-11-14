@@ -7,6 +7,7 @@ import { clipEnd, getMedia, getSequence, makeClip, sequenceEnd, type Clip, type 
 import { STILL_DURATION } from '../monitor.ts';
 import { frameTicks, snapToFrame, TICKS_PER_SECOND, type Tick } from '../time.ts';
 import type { Placement } from '../commands/clips.ts';
+import type { LaneKey } from './lane.ts';
 
 export type Tool = 'select' | 'razor' | 'ripple' | 'roll' | 'slip' | 'slide' | 'hand' | 'zoom';
 export const TOOLS: readonly Tool[] = ['select', 'razor', 'ripple', 'roll', 'slip', 'slide', 'hand', 'zoom'];
@@ -57,6 +58,8 @@ export class Session {
   snapping = true;
   /** Linked clips are edited together unless this is off. */
   linked = true;
+  /** Property shown in the timeline's keyframe lane. */
+  laneKey: LaneKey = 'opacity';
   /** Which panel shortcuts like mark in/out apply to. */
   focus: 'timeline' | 'source' = 'timeline';
   view = { pxPerSecond: 80, scrollX: 0, scrollY: 0, width: 1000 };

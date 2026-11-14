@@ -1,4 +1,5 @@
 // Minimal WebM reader for tests: parses a whole file in memory into tracks and blocks.
+import { colorFromCodes, type ColorInfo } from '../src/media/color.ts';
 
 export interface WebmTrack {
   number: number;
@@ -9,6 +10,7 @@ export interface WebmTrack {
   sampleRate: number;
   channels: number;
   codecPrivate: Uint8Array | null;
+  color: ColorInfo | null;
 }
 export interface WebmBlock {
   track: number;
@@ -23,7 +25,7 @@ export interface WebmFile {
   blocks: WebmBlock[];
 }
 
-const CONTAINERS = new Set([0x18538067, 0x1549a966, 0x1654ae6b, 0xae, 0xe0, 0xe1, 0x1f43b675, 0x1a45dfa3]);
+const CONTAINERS = new Set([0x18538067, 0x1549a966, 0x1654ae6b, 0xae, 0xe0, 0xe1, 0x1f43b675, 0x1a45dfa3, 0x55b0]);
 
 export function parseWebm(data: Uint8Array): WebmFile {
   const out: WebmFile = { docType: '', durationMs: 0, tracks: [], blocks: [] };
@@ -32,6 +34,7 @@ export function parseWebm(data: Uint8Array): WebmFile {
   let scale = 1_000_000;
   let cluster = 0;
   let track: WebmTrack | null = null;
+  let colour = [1, 1, 1, 1]; // primaries, transfer, matrix, range
   const vint = (p: number, keepMarker: boolean): [number, number] => {
     const first = data[p] as number;
     let len = 1;
@@ -59,7 +62,8 @@ export function parseWebm(data: Uint8Array): WebmFile {
       const stop = size < 0 ? end : body + size;
       if (stop > data.length) throw new Error('WebM element runs past the end of the file');
       if (id === 0xae) {
-        track = { number: 0, type: 'video', codecId: '', width: 0, height: 0, sampleRate: 0, channels: 0, codecPrivate: null };
+        track = { number: 0, type: 'video', codecId: '', width: 0, height: 0, sampleRate: 0, channels: 0, codecPrivate: null, color: null };
+        colour = [1, 1, 1, 1];
         out.tracks.push(track);
       }
       if (CONTAINERS.has(id)) walk(body, stop);
@@ -79,6 +83,10 @@ export function parseWebm(data: Uint8Array): WebmFile {
         else if (id === 0x9f) track.channels = num(body, size);
         else if (id === 0xb5) track.sampleRate = size === 8 ? view.getFloat64(body) : view.getFloat32(body);
         else if (id === 0x63a2) track.codecPrivate = data.subarray(body, stop);
+        else if (id === 0x55b1 || id === 0x55b9 || id === 0x55ba || id === 0x55bb) {
+          colour[[0x55bb, 0x55ba, 0x55b1, 0x55b9].indexOf(id)] = num(body, size);
+          track.color = colorFromCodes(colour[0] as number, colour[1] as number, colour[2] as number, colour[3] === 2);
+        }
       }
       p = stop;
     }

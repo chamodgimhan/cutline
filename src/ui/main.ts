@@ -3,6 +3,7 @@ import { App } from './app.ts';
 import { audioActions } from './audioActions.ts';
 import { binPanel } from './bin.ts';
 import { h, load, save } from './dom.ts';
+import { openExportDialog } from './exportDialog.ts';
 import { inspectorPanel } from './inspector.ts';
 import { menuBar } from './menus.ts';
 import { monitorPanel } from './monitor.ts';
@@ -28,6 +29,7 @@ export function mount(root: HTMLElement): App {
   const app = new App();
   app.actions.push(...audioActions(app));
   app.actions.push(...captionActions(app, app.speech));
+  app.actions.push({ id: 'file.export', label: 'Export…', menu: 'File', keys: ['Ctrl+E'], run: () => openExportDialog(app) });
   app.actions.push({ id: 'help.shortcuts', label: 'Keyboard Shortcuts…', menu: 'Help', keys: ['Ctrl+Alt+K'], run: () => openShortcutEditor(app) });
 
   const saved = load<Layout>('cutline.layout', DEFAULT_LAYOUT);
@@ -103,7 +105,13 @@ export function mount(root: HTMLElement): App {
     }
     info.textContent = `${app.session.tool} tool · ${app.session.selection.size} selected · snapping ${app.session.snapping ? 'on' : 'off'}`;
   });
-  root.append(menuBar(app), work, h('footer', { class: 'status' }, info, message));
+  const exporting = h('span', { role: 'status', 'data-role': 'export-status' });
+  app.exports.subscribe(() => {
+    const run = app.exports.items.find((i) => i.state === 'running');
+    const waiting = app.exports.items.filter((i) => i.state === 'queued').length;
+    exporting.textContent = run ? `Exporting ${run.job.fileName}: ${run.total ? Math.round((run.done / run.total) * 100) : 0}%${waiting ? ` (+${waiting} waiting)` : ''}` : '';
+  });
+  root.append(menuBar(app), work, h('footer', { class: 'status' }, info, exporting, message));
   apply();
   window.addEventListener('keydown', (e) => void app.key(e));
   // Stop the browser from navigating to a file dropped outside the bin.

@@ -218,13 +218,13 @@ export async function run(): Promise<string[]> {
       await page.locator(`.menubar [data-menu="${a.menu}"]`).click();
       await page.locator(`.menu [data-action="${a.id}"]`).click();
       check((await state('app.lastAction')) === a.id, `menu item ${a.id} did not run its action`);
-      if (a.id === 'help.shortcuts') await page.locator('.dialog [data-role=close]').click();
+      if (await page.locator('.dialog [data-role=close]').count()) await page.locator('.dialog [data-role=close]').click(); // actions that open a dialog
       for (const combo of a.keys) {
         await prime();
         await canvas.focus();
         await page.keyboard.press(playwrightKey(combo));
         check((await state('app.lastAction')) === a.id, `shortcut ${combo} did not run ${a.id} (ran ${await state('app.lastAction')})`);
-        if (a.id === 'help.shortcuts') await page.locator('.dialog [data-role=close]').click();
+        if (await page.locator('.dialog [data-role=close]').count()) await page.locator('.dialog [data-role=close]').click(); // actions that open a dialog
         if (a.id.startsWith('play.')) await page.evaluate(() => (window as unknown as Win).cutline.app.program.transport.pause());
       }
     }

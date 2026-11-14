@@ -106,7 +106,7 @@ export function inspectorPanel(app: App): HTMLElement {
     const hits = s.selectedClips();
     const one = hits.length === 1 ? hits[0]?.clip : undefined;
     // Rebuild only when what is shown changes, and never under the user's cursor while typing.
-    const sig = one ? `${one.id}:${JSON.stringify([one.name, one.enabled, one.start, one.duration, one.video, one.audio, one.text, one.effects, one.transitionIn, one.transitionOut, one.speed, one.reverse, one.pitchKeep, s.laneKey, s.seq.tracks.map((t) => [t.volume, t.pan])])}:${JSON.stringify([one.video, one.audio, one.effects]).includes('"keys"') ? s.playhead : ''}` : `${hits.length}:${JSON.stringify([s.seq.name, s.seq.width, s.seq.height, s.seq.fps, s.seq.sampleRate])}`;
+    const sig = one ? `${one.id}:${JSON.stringify([one.name, one.enabled, one.start, one.duration, one.video, one.audio, one.text, one.effects, one.transitionIn, one.transitionOut, one.speed, one.reverse, one.pitchKeep, one.reframe, s.laneKey, s.seq.tracks.map((t) => [t.volume, t.pan])])}:${JSON.stringify([one.video, one.audio, one.effects]).includes('"keys"') ? s.playhead : ''}` : `${hits.length}:${JSON.stringify([s.seq.name, s.seq.width, s.seq.height, s.seq.fps, s.seq.sampleRate])}`;
     if (sig === shown) return;
     shown = sig;
     // Rebuilding must not disturb typing: keep focus on the same field, and keep text the user has not committed yet.

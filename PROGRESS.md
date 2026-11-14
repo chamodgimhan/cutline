@@ -1,16 +1,17 @@
 # Cutline progress
 
 ## Phase
-Phase 8: Export (starting)
+Phase 9: Project safety (starting)
 
 ## Done
-- Phases 0-7 complete and committed: scaffold + fixtures; core model/commands/history; demux + decode; compositor + transport; editing UI; audio; effects/transitions/speed/keyframes; titles + captions (SRT/VTT, cue rules, burn-in, bundled Roboto fonts).
-- 209 unit tests; smoke suites phase0, phase2-phase7 green; drift (10 min) green.
+- Phases 0-8 complete and committed: scaffold + fixtures; core model/commands/history; demux + decode; compositor + transport; editing UI; audio; effects/transitions/speed/keyframes; titles + captions (SRT/VTT, cue rules, burn-in, bundled Roboto fonts); export (MP4, WebM, PNG, WAV, presets, batch, reframe, queue, dialog).
+- 220 unit tests; smoke suites phase0, phase2-phase8 green; drift (10 min) green.
 
 ## Next step
-Read RESUME.md first. Phase 8 (Export) step 1: WebM muxer (VP9 + Opus) as a tested pure module in src/media/webm/, plus AAC priming handling in the MP4 muxer (edit list) so audio starts in sync; then export engine in a worker (src/engine/export/): frames from Renderer.renderFrame on an OffscreenCanvas -> VideoEncoder, audio from renderAudio -> AudioEncoder, codec support via isConfigSupported (never offer what the machine cannot encode), presets (1080p, 4K, vertical 1080x1920, square, custom), ranges (whole, in/out, each selected clip or marker range = batch), per-clip reframe for vertical, PNG frame + WAV, progress/ETA/cancel/queue, streaming to disk (File System Access handle on web; memory fallback), export dialog UI; phase8 smoke (encoder input == renderFrame, PSNR >= 40 dB vs preview, re-probe duration/frame count/sync, cancel leaves no file, 10-min export memory bound, batch of 20). Needs a WebM demuxer or probe to re-read exports; MP4 exports re-read with the existing demuxer.
+Read RESUME.md first. Phase 9 (Project safety): File menu actions save, save as, open, new, recent projects, unsaved-changes prompt (History.dirty exists); autosave every 60 s to a recovery file and crash recovery on next launch; cache size limits with eviction (ByteCache in src/media/peaks.ts is already bounded; add a persistent store if needed and a soak check that it never exceeds its limit); error log the user can export. Storage on web: File System Access handles for project files, IndexedDB/OPFS for recovery + recents; Phase 10 swaps in native dialogs through the preload API. Done when: kill mid-edit + relaunch restores the work (test); a project with offline media opens and relinks; cache never exceeds its limit in the soak test.
 
 ## Budgets measured
+- Export: 10 min (14,400 frames, 64x48) in ~55 s, page heap flat (18 -> 23 MiB); MP4 and WebM 40.7-41.0 dB vs preview; audio click exactly on its sample; batch of 20 valid files.
 - Audio: mixdown within 0.001 LSB of an independent calculation; largest step at a cut 0.032 (unfaded 0.244); after 50 edits clicks within 0.042 ms of their frame; fixture loudness -14.28 LUFS (reference -14.29).
 - Timeline with 2,000 clips: worst frame 24 ms, median 6 ms while scrolling (limit 32); paint script 1.3 ms.
 - Render: 2D fallback matches GL at 51-68 dB. 1080p scrub through renderFrame worst 80 ms. 1080p playback 29.2 of 30 fps (software GL). 10-min playback: audio/timeline error 0.02 ms, picture lag 0.12 frames, no drift, 7 frames dropped.
@@ -52,3 +53,5 @@ Read RESUME.md first. Phase 8 (Export) step 1: WebM muxer (VP9 + Opus) as a test
 - Pitch keep stretches each 0.4 s audio chunk on its own (marked `shortcut:` in audioRender.ts).
 - The inspector rebuilds on change and restores focus and uncommitted text.
 - Fonts: Roboto and Roboto Mono are OFL-1.1, Roboto Slab is Apache-2.0; files and licences vendored in assets/fonts (not npm dependencies). VTT cue settings and names are not kept on import.
+- Export converts RGB to I420 (BT.709 limited) itself and writes colr / WebM Colour: this machine's H.264 encoder, given RGB, used BT.601 full range but labelled the stream BT.709 limited (30 dB vs preview; 41 dB after). Video is constant-quality (quantizer) where the encoder supports it. Audio is mixed on the main thread and sent to the export worker (no Web Audio in workers).
+- Exporting to another shape shows the centre of the sequence (cover); clip.reframe pans/zooms per clip; titles and captions are re-laid-out for the new width.

@@ -76,6 +76,7 @@ input[type=range] { padding: 0; border: 0; background: none; accent-color: var(-
 .dialog h2 { margin: 0; font-size: var(--t-xl); }
 .dialog .list { overflow: auto; border: 1px solid var(--c-line); border-radius: var(--z-radius); }
 .dialog .list .r { display: grid; grid-template-columns: 1fr auto auto auto; gap: var(--s-x3); align-items: center; padding: var(--s-x1) var(--s-x3); border-bottom: 1px solid var(--c-line); }
+progress { width: 120px; accent-color: var(--c-accent); }
 .dialog .list .r .warn { color: var(--c-danger); font-size: var(--t-sm); grid-column: 1 / -1; }
 .dialog .foot { display: flex; gap: var(--s-x3); justify-content: flex-end; }
 kbd { font: var(--t-sm) var(--t-mono); color: var(--c-text-dim); }

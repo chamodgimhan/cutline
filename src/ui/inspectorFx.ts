@@ -54,6 +54,18 @@ export function fxFields(app: App, c: Clip): HTMLElement[] {
     );
   }
 
+  // Framing for exports of another shape (vertical, square)
+  if (c.kind === 'video') {
+    const r = c.reframe ?? { x: 0, y: 0, scale: 1 };
+    const set = (change: Partial<typeof r>): void => edit((clip) => ({ ...clip, reframe: { ...(clip.reframe ?? { x: 0, y: 0, scale: 1 }), ...change } }), 'Reframe');
+    out.push(
+      h('h3', { title: 'Used when exporting to a different shape than the sequence, such as vertical' }, 'Reframe for other shapes'),
+      ...row('Reframe pan X %', num(r.x * 100, (v) => set({ x: Math.min(1, Math.max(-1, v / 100)) }), 5)),
+      ...row('Reframe pan Y %', num(r.y * 100, (v) => set({ y: Math.min(1, Math.max(-1, v / 100)) }), 5)),
+      ...row('Reframe zoom %', num(r.scale * 100, (v) => set({ scale: Math.min(8, Math.max(0.1, v / 100)) }), 5)),
+    );
+  }
+
   // Transitions
   if (c.kind !== 'caption') {
     const types: [string, string][] = [['', 'None'], ...(c.kind === 'audio' ? [AUDIO_TRANSITION] : VIDEO_TRANSITIONS).map((t): [string, string] => [t, TRANSITION_LABELS[t] ?? t])];

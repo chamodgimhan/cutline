@@ -5,6 +5,7 @@ import { pcmToFloat, wavReader } from '../media/pcm.ts';
 import { MemorySource } from '../media/source.ts';
 import { floatToPcm16, wavHeader } from '../media/wav.ts';
 import { WebmMuxer } from '../media/webm/muxer.ts';
+import { rgbaToI420 } from '../media/yuv.ts';
 import { captionStyle } from './captions.ts';
 import { eta, jobFrameTick, offlineInJobs, outputSize, planExport, PRESETS, type ExportSettings } from './exportPlan.ts';
 import { defaultTextProps, defaultVideoProps } from './model.ts';
@@ -134,6 +135,21 @@ describe('WebM muxer', () => {
     const f = parseWebm(sink.bytes());
     expect(f.blocks.map((b) => b.timeMs)).toEqual(Array.from({ length: 100 }, (_, i) => i * 1000));
     expect(f.durationMs).toBe(99000);
+  });
+});
+
+describe('RGB to YUV for the encoder', () => {
+  it('converts with BT.709 limited range and averages chroma', () => {
+    const px = (r: number, g: number, b: number): number[] => [r, g, b, 255];
+    const flat = (c: number[]): Uint8Array => Uint8Array.from([...c, ...c, ...c, ...c]);
+    expect([...rgbaToI420(flat(px(0, 0, 0)), 2, 2)]).toEqual([16, 16, 16, 16, 128, 128]);
+    expect([...rgbaToI420(flat(px(255, 255, 255)), 2, 2)]).toEqual([235, 235, 235, 235, 128, 128]);
+    expect([...rgbaToI420(flat(px(128, 128, 128)), 2, 2)]).toEqual([126, 126, 126, 126, 128, 128]);
+    expect([...rgbaToI420(flat(px(255, 0, 0)), 2, 2)]).toEqual([63, 63, 63, 63, 102, 240]);
+    expect([...rgbaToI420(flat(px(0, 0, 255)), 2, 2)]).toEqual([32, 32, 32, 32, 240, 118]);
+    // Two black and two white pixels: luma per pixel, chroma of their grey average.
+    expect([...rgbaToI420(Uint8Array.from([...px(0, 0, 0), ...px(255, 255, 255), ...px(255, 255, 255), ...px(0, 0, 0)]), 2, 2)]).toEqual([16, 235, 235, 16, 128, 128]);
+    expect(rgbaToI420(new Uint8Array(4 * 6 * 4), 4, 6).length).toBe(36);
   });
 });
 

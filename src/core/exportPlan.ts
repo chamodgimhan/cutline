@@ -53,6 +53,7 @@ export interface ExportJob {
   videoBitrate: number;
   audioBitrate: number;
   frameCount: number;
+  quality: Quality;
 }
 
 const even = (n: number): number => Math.max(2, Math.round(n / 2) * 2);
@@ -106,7 +107,7 @@ export function planExport(project: Project, s: ExportSettings): ExportJob[] {
     const fpsValue = seq.fps.num / seq.fps.den;
     return {
       fileName: `${base}.${s.format}`, format: s.format, start: r.start, end: s.format === 'png' ? r.start + frameToTick(1, seq.fps) : r.end, width, height, fps: seq.fps,
-      sampleRate: seq.sampleRate, frameCount,
+      sampleRate: seq.sampleRate, frameCount, quality: s.quality,
       videoBitrate: Math.round(Math.min(80_000_000, Math.max(300_000, width * height * fpsValue * BITS_PER_PIXEL[s.quality]))),
       audioBitrate: s.quality === 'low' ? 128_000 : 192_000,
     };

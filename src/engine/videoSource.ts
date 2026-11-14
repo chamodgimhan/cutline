@@ -61,6 +61,8 @@ export class VideoSource {
       codec: track.entry.codec, codedWidth: track.width, codedHeight: track.height,
       hardwareAcceleration: options.hardwareAcceleration ?? 'no-preference', optimizeForLatency: true,
       ...(track.entry.description ? { description: track.entry.description } : {}),
+      // Without this the browser guesses the colour matrix from the picture size, and small pictures come out wrong.
+      ...(track.entry.color ? { colorSpace: track.entry.color as VideoColorSpaceInit } : {}),
     };
     let ok: boolean;
     try {

@@ -1,5 +1,6 @@
 // ISO BMFF box builders. Pure functions returning bytes.
 import { ByteWriter, concatBytes } from '../bytes.ts';
+import { colorCodes, type ColorInfo } from '../color.ts';
 
 export function box(type: string, ...payload: Uint8Array[]): Uint8Array {
   const body = concatBytes(payload);
@@ -70,6 +71,12 @@ export function avcC(sps: Uint8Array, pps: Uint8Array): Uint8Array {
   w.u8(1).u8(sps[1] ?? 66).u8(sps[2] ?? 0).u8(sps[3] ?? 30).u8(0xff);
   w.u8(0xe1).u16(sps.length).bytes(sps).u8(1).u16(pps.length).bytes(pps);
   return box('avcC', w.finish());
+}
+
+/** Colour information box, so players convert back to RGB the way the encoder converted from it. */
+export function colr(c: ColorInfo): Uint8Array {
+  const k = colorCodes(c);
+  return box('colr', bw().ascii('nclx').u16(k.primaries).u16(k.transfer).u16(k.matrix).u8(k.fullRange ? 0x80 : 0).finish());
 }
 
 /** Visual sample entry (avc1, vp09 ...) wrapping a codec configuration box. */

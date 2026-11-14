@@ -1,5 +1,6 @@
 // WebM muxer (VP9 or VP8 video, Opus audio). Streams clusters to a sink; only one cluster is held in memory.
 import { ByteWriter, concatBytes } from '../bytes.ts';
+import { colorCodes, type ColorInfo } from '../color.ts';
 import type { Mp4Sink } from '../mp4/muxer.ts';
 
 const enc = new TextEncoder();
@@ -21,10 +22,18 @@ const float = (id: number, v: number): Uint8Array => {
 };
 const str = (id: number, s: string): Uint8Array => el(id, enc.encode(s));
 
+/** Colour element: matrix, range (1 limited, 2 full), transfer, primaries. */
+function colour(c: ColorInfo | undefined): Uint8Array[] {
+  if (!c) return [];
+  const k = colorCodes(c);
+  return [el(0x55b0, uint(0x55b1, k.matrix), uint(0x55b9, k.fullRange ? 2 : 1), uint(0x55ba, k.transfer), uint(0x55bb, k.primaries))];
+}
+
 export interface WebmVideo {
   codec: 'V_VP9' | 'V_VP8';
   width: number;
   height: number;
+  color?: ColorInfo;
 }
 export interface WebmAudio {
   sampleRate: number;
@@ -66,7 +75,7 @@ export class WebmMuxer {
   addVideoTrack(v: WebmVideo): number {
     const n = this.tracks.length + 1;
     this.videoTrack = n;
-    this.tracks.push(el(0xae, uint(0xd7, n), uint(0x73c5, n), uint(0x83, 1), uint(0x9c, 0), str(0x86, v.codec), el(0xe0, uint(0xb0, v.width), uint(0xba, v.height))));
+    this.tracks.push(el(0xae, uint(0xd7, n), uint(0x73c5, n), uint(0x83, 1), uint(0x9c, 0), str(0x86, v.codec), el(0xe0, uint(0xb0, v.width), uint(0xba, v.height), ...colour(v.color))));
     return n;
   }
 

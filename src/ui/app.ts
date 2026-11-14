@@ -7,6 +7,7 @@ import { EditError } from '../core/command.ts';
 import { addMedia, updateMedia } from '../core/commands/tracks.ts';
 import { getMedia, makeProject, makeSequence, makeTrack, type Id, type MediaAsset, type Project } from '../core/model.ts';
 import { sourceProject } from '../core/monitor.ts';
+import { ExportQueue, type Destination } from '../engine/export/queue.ts';
 import { importMedia } from '../engine/importMedia.ts';
 import { MediaJobs } from '../engine/mediaJobs.ts';
 import { MediaSources } from '../engine/mediaSources.ts';
@@ -34,6 +35,7 @@ export class App {
   readonly library = new MediaLibrary();
   readonly media: MediaSources;
   readonly jobs = new MediaJobs();
+  readonly exports: ExportQueue;
   readonly shortcuts: ShortcutMap;
   readonly program: MonitorEngine;
   readonly source: MonitorEngine;
@@ -48,6 +50,7 @@ export class App {
 
   constructor(project: Project = newProject()) {
     this.media = new MediaSources(this.library);
+    this.exports = new ExportQueue(this.media);
     this.session = new Session(project);
     this.program = this.engine(() => this.session.project);
     this.source = this.engine(() => this.sourceProjectNow());
@@ -119,6 +122,22 @@ export class App {
   saveShortcuts(): void {
     save('cutline.shortcuts', this.shortcuts.toJSON());
   }
+
+  /**
+   * Ask where to save exported files: a save dialog for one file, a folder for several. Where the browser
+   * has no such dialogs the files are built in memory and downloaded. Null when the user cancels.
+   */
+  exportDestination: (fileNames: string[]) => Promise<Destination | null> = async (fileNames) => {
+    const w = window as unknown as { showSaveFilePicker?: (o: object) => Promise<FileSystemFileHandle>; showDirectoryPicker?: (o: object) => Promise<FileSystemDirectoryHandle> };
+    try {
+      if (fileNames.length === 1 && w.showSaveFilePicker) return { kind: 'file', handle: await w.showSaveFilePicker({ suggestedName: fileNames[0] }) };
+      if (fileNames.length > 1 && w.showDirectoryPicker) return { kind: 'folder', dir: await w.showDirectoryPicker({ mode: 'readwrite' }) };
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'AbortError') return null;
+      throw e;
+    }
+    return { kind: 'memory' };
+  };
 
   /** Where the worker can read a media file from, or null when it is offline. */
   spec(asset: MediaAsset): SourceSpec | null {

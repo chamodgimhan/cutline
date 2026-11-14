@@ -3,7 +3,7 @@ import type { Menu } from '../core/editor/actions.ts';
 import type { App } from './app.ts';
 import { h } from './dom.ts';
 
-const MENUS: Menu[] = ['Edit', 'Clip', 'Mark', 'Sequence', 'Titles', 'Track', 'Playback', 'View', 'Tools', 'Help'];
+const MENUS: Menu[] = ['File', 'Edit', 'Clip', 'Mark', 'Sequence', 'Titles', 'Track', 'Playback', 'View', 'Tools', 'Help'];
 let open: { el: HTMLElement; close: () => void } | null = null;
 
 export function closeMenu(): void {

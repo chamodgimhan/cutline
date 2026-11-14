@@ -9,7 +9,7 @@ import { TICKS_PER_SECOND } from '../time.ts';
 import type { Tick } from '../time.ts';
 import { TOOLS, type Session } from './session.ts';
 
-export type Menu = 'Edit' | 'Clip' | 'Mark' | 'Sequence' | 'Titles' | 'Playback' | 'View' | 'Tools' | 'Track' | 'Help';
+export type Menu = 'File' | 'Edit' | 'Clip' | 'Mark' | 'Sequence' | 'Titles' | 'Playback' | 'View' | 'Tools' | 'Track' | 'Help';
 
 export interface Action {
   id: string;

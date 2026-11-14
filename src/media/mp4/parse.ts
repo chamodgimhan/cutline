@@ -1,4 +1,5 @@
 // MP4/MOV box walking and sample-entry parsing: codec strings and decoder configuration.
+import { colorFromCodes, type ColorInfo } from '../color.ts';
 import { MediaError } from '../source.ts';
 
 export interface BoxRef {
@@ -60,6 +61,8 @@ export interface SampleEntry {
   sampleRate: number;
   channels: number;
   pcm: PcmFormat | null;
+  /** Colour description from a colr box, when the file has one we understand. */
+  color: ColorInfo | null;
 }
 
 const hex2 = (n: number): string => n.toString(16).padStart(2, '0');
@@ -118,8 +121,10 @@ const PCM_FOURCC: Record<string, PcmFormat> = {
 };
 
 function parseVideoEntry(type: string, body: Uint8Array): SampleEntry {
-  const base = { fourcc: type, width: u16(body, 24), height: u16(body, 26), sampleRate: 0, channels: 0, pcm: null };
   const kids = children(body, 78);
+  const nclx = kids.find((k) => k.type === 'colr' && fourcc(k.body, 0) === 'nclx' && k.body.length >= 11)?.body;
+  const color = nclx ? colorFromCodes(u16(nclx, 4), u16(nclx, 6), u16(nclx, 8), ((nclx[10] ?? 0) & 0x80) !== 0) : null;
+  const base = { fourcc: type, width: u16(body, 24), height: u16(body, 26), sampleRate: 0, channels: 0, pcm: null, color };
   const cfg = (t: string): Uint8Array | undefined => kids.find((k) => k.type === t)?.body;
   const avcC = cfg('avcC');
   if ((type === 'avc1' || type === 'avc3') && avcC) {
@@ -149,7 +154,7 @@ function parseAudioEntry(type: string, body: Uint8Array): SampleEntry {
   const wave = kids.find((k) => k.type === 'wave');
   if (wave) kids = [...kids, ...children(wave.body)];
   const cfg = (t: string): Uint8Array | undefined => kids.find((k) => k.type === t)?.body;
-  const base = { fourcc: type, width: 0, height: 0, sampleRate: u16(body, 24), channels: u16(body, 16), pcm: null, description: null };
+  const base = { fourcc: type, width: 0, height: 0, sampleRate: u16(body, 24), channels: u16(body, 16), pcm: null, description: null, color: null };
   const bits = u16(body, 18);
   const esds = cfg('esds');
   if (type === 'mp4a' && esds) {

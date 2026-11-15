@@ -54,7 +54,7 @@ out.push('## Summary', '', '| Check | Result | Time | Run at |', '|---|---|---|-
 const unit = readReport<Unit>('unit');
 if (unit) {
   const ms = Math.max(...unit.testResults.map((r) => r.endTime)) - unit.startTime;
-  out.push(`| Unit tests (${unit.testResults.length} files) | ${unit.numPassedTests} of ${unit.numTotalTests} passed${unit.numFailedTests ? `, **${unit.numFailedTests} failed**` : ''} | ${(ms / 1000).toFixed(1)} s | ${day(unit.at)} |`);
+  out.push(`| Unit tests (${unit.testResults.length} files) | ${unit.numPassedTests} of ${unit.numTotalTests} passed${unit.numFailedTests ? `, **${unit.numFailedTests} failed**` : ''} | ${(ms / 1000).toFixed(1)} s | ${day(new Date(unit.startTime).toISOString())} |`);
   for (const f of unit.testResults) for (const a of f.assertionResults) if (a.status === 'failed') allFailures.push(`unit: ${a.fullName}: ${a.failureMessages[0]?.split('\n')[0] ?? ''}`);
 } else out.push('| Unit tests | **not run** | | |');
 const fuzz = readReport<Fuzz>('fuzz');
@@ -94,7 +94,7 @@ fs.writeFileSync(path.join(ROOT, 'TEST_REPORT.md'), out.join('\n'));
 
 const actions = readReport<Actions>('actions');
 if (actions) {
-  const doc = ['# Cutline keyboard shortcuts', '', 'Generated from the actions in the running app (`npm run report`). Every action can also be found from the command list, and any shortcut can be changed in Help → Keyboard Shortcuts.', ''];
+  const doc = ['# Cutline keyboard shortcuts', '', 'Generated from the actions in the running app (`npm run report`). Help → Keyboard Shortcuts in the app lists every action and lets you change any shortcut.', ''];
   const menus = [...new Set(actions.actions.map((a) => a.menu))];
   for (const m of menus) {
     doc.push(`## ${m}`, '', '| Action | Shortcut |', '|---|---|');

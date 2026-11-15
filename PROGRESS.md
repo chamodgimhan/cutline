@@ -1,7 +1,7 @@
 # Cutline progress
 
 ## Phase
-Phase 11: Hardening and release (in progress)
+Phase 11: Hardening and release (done; tagged 1.0.0)
 
 ## Done
 - Phases 0-10 complete and committed: scaffold + fixtures; core model/commands/history; demux + decode; compositor + transport; editing UI; audio; effects/transitions/speed/keyframes; titles + captions (SRT/VTT, cue rules, burn-in, bundled Roboto fonts); export (MP4, WebM, PNG, WAV, presets, batch, reframe, queue, dialog); project safety (save/open/recent, autosave + crash recovery, error log, cache limits); licensing (Ed25519 keys, keygen tool, watermark), LICENSE/EULA/third-party notices + audit, Electron shell, Windows installer + portable built (unsigned).
@@ -9,7 +9,7 @@ Phase 11: Hardening and release (in progress)
 - Phase 11 so far: phase11 smoke (workflow with byte-identical re-export after reopen, 50 cycles flat, keyboard pass with focus ring on every stop) green; fuzz 100,000 commands green (npm run fuzz); soak suite written (npm run smoke soak); contrast tests extended (clip fills darkened to 4.5:1 for clip names); inspector shows the picture part of a linked clip; README, tools/testReport.ts (npm run report -> TEST_REPORT.md, SHORTCUTS.md); no TODO/stub/mock outside tests.
 
 ## Next step
-Read RESUME.md first. Phase 11 finish: soak result (30 min) green; full `npm run smoke` + desktop green; `npm run fuzz`; `npm run report`; check TEST_REPORT.md lists Known bugs with steps; commit; tag 1.0.0; final report in 10 lines or fewer.
+Build finished: all phases done, v1.0.0 tagged. Possible follow-ups: AAC encoder delay signalling, B-frame source test, code signing, mac/linux builds, legal review of EULA.txt.
 
 ## Budgets measured
 - Caches: 400 random frames over 8 files held at most 6 decoders and 72 MiB of frames (limit 384 MiB).

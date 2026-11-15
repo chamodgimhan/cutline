@@ -1,6 +1,7 @@
 // Builds everything and puts what a buyer gets in one folder, plus a zip of it:
-//   node desktop/release.mjs   ->  release/Cutline-<version>/  and  release/Cutline-<version>.zip
-// Windows installer + portable always; the Linux archive too (built here without symlinks, as tar.gz).
+//   node desktop/release.mjs [--linux]   ->  release/Cutline-<version>/  and  release/Cutline-<version>.zip
+// The folder holds Cutline.exe (runs without installing) and the documents. The Windows installer is
+// still built, in desktop/dist, for anyone who prefers it.
 // Nothing secret goes in: the keygen tool and its private key stay out, and the script refuses to
 // finish if anything like them appears in the folder.
 import { execSync } from 'node:child_process';
@@ -18,20 +19,21 @@ const run = (cmd, cwd) => {
 };
 
 run('node desktop/build.mjs', root);
-run('npx electron-builder --linux tar.gz --x64', here);
-
 const name = `Cutline-${version}`;
 const out = path.join(root, 'release', name);
-fs.rmSync(out, { recursive: true, force: true });
-fs.mkdirSync(path.join(out, 'Windows'), { recursive: true });
-fs.mkdirSync(path.join(out, 'Linux'), { recursive: true });
 const dist = (f) => path.join(here, 'dist', f);
-fs.copyFileSync(dist(`Cutline-Setup-${version}.exe`), path.join(out, 'Windows', `Cutline-Setup-${version}.exe`));
-fs.copyFileSync(dist(`Cutline-Portable-${version}.exe`), path.join(out, 'Windows', `Cutline-Portable-${version}.exe`));
-// Packed on Windows, electron-builder's archive loses the executable bit; repack with Linux permissions.
-writeTarGz(dist('linux-unpacked'), `Cutline-Linux-${version}`, path.join(out, 'Linux', `Cutline-Linux-${version}.tar.gz`), new Set(['cutline', 'chrome-sandbox', 'chrome_crashpad_handler']));
+fs.rmSync(out, { recursive: true, force: true });
+fs.mkdirSync(out, { recursive: true });
+// The buyer's folder: one program file (the self-contained portable build) and the three documents.
+fs.copyFileSync(dist(`Cutline-Portable-${version}.exe`), path.join(out, 'Cutline.exe'));
 fs.copyFileSync(path.join(root, 'docs/READ-ME-FIRST.txt'), path.join(out, 'READ-ME-FIRST.txt'));
-for (const f of ['EULA.txt', 'THIRD_PARTY_LICENSES.txt', 'SHORTCUTS.md']) fs.copyFileSync(path.join(root, f), path.join(out, f));
+for (const f of ['EULA.txt', 'THIRD_PARTY_LICENSES.txt']) fs.copyFileSync(path.join(root, f), path.join(out, f));
+// --linux: also a Linux archive next to the folder. Packed on Windows, electron-builder's archive loses
+// the executable bit, so it is repacked with Linux permissions.
+if (process.argv.includes('--linux')) {
+  run('npx electron-builder --linux tar.gz --x64', here);
+  writeTarGz(dist('linux-unpacked'), `Cutline-Linux-${version}`, path.join(root, 'release', `Cutline-Linux-${version}.tar.gz`), new Set(['cutline', 'chrome-sandbox', 'chrome_crashpad_handler']));
+}
 
 // Safety check: no source, no keys, nothing from the owner's tools.
 const all = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? all(path.join(dir, e.name)) : [path.join(dir, e.name)]));

@@ -5,27 +5,23 @@ internet connection, nothing you make leaves your computer.
 Copyright (c) 2026 Chamod Gimhan. All rights reserved. Using Cutline means you accept EULA.txt.
 
 
+HOW TO OPEN IT
+  Double-click Cutline.exe. That is all: nothing is installed, and the folder can live anywhere,
+  including a USB stick. The first start takes a few seconds while it unpacks itself.
+  The first time, Windows may show "Windows protected your PC". Click "More info", then "Run anyway".
+
+
 WHAT IS IN THIS FOLDER
-  Windows/Cutline-Setup-1.0.0.exe      Installer for Windows 10 and 11 (64-bit).
-  Windows/Cutline-Portable-1.0.0.exe   Runs without installing, e.g. from a USB stick.
-  Linux/Cutline-Linux-1.0.0.tar.gz     For 64-bit Linux.
-  SHORTCUTS.md                         Every keyboard shortcut.
-  EULA.txt                             The licence agreement.
-  THIRD_PARTY_LICENSES.txt             Licences of components and fonts Cutline includes.
+  Cutline.exe                The program.
+  READ-ME-FIRST.txt          This file.
+  EULA.txt                   The licence agreement.
+  THIRD_PARTY_LICENSES.txt   Licences of components and fonts Cutline includes.
 
 
 SYSTEM REQUIREMENTS
-  Windows 10 or 11 (64-bit), or a 64-bit Linux desktop. 8 GB of memory recommended.
+  Windows 10 or 11 (64-bit). 8 GB of memory recommended.
   A graphics card with WebGL2 support is recommended. Without it Cutline still runs, with fewer
   effects in preview and export.
-
-
-INSTALL
-  Windows installer: double-click Cutline-Setup-1.0.0.exe and follow the steps. Windows may show
-  "Windows protected your PC" the first time; click "More info", then "Run anyway".
-  Windows portable: double-click Cutline-Portable-1.0.0.exe. Nothing is installed.
-  Linux: extract the archive, then run the "cutline" file inside the extracted folder. If it does
-  not start, run it from a terminal with: ./cutline --no-sandbox
 
 
 TRIAL AND LICENCE KEY
@@ -45,6 +41,7 @@ FIRST EDIT IN FIVE STEPS
      Titles menu (SRT and VTT files can be imported).
   5. Press Ctrl+E to export: MP4, WebM, a PNG frame or WAV audio, at the size you choose.
   Save your project with Ctrl+S. Cutline also autosaves and offers to recover after a crash.
+  Every keyboard shortcut is listed under Help > Keyboard Shortcuts.
 
 
 GOOD TO KNOW

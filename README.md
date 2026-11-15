@@ -7,7 +7,7 @@ Copyright (c) 2026 Chamod Gimhan. All rights reserved. See `LICENSE` and `EULA.t
 ## Install
 
 - **Windows:** run `Cutline-Setup-1.0.0.exe` (installer) or `Cutline-Portable-1.0.0.exe` (no install). Both builds are unsigned, so Windows SmartScreen asks once before the first run.
-- **Make the folder you sell:** `node desktop/release.mjs` builds everything and writes `release/Cutline-<version>/` (Windows installer, portable, Linux archive, READ-ME-FIRST.txt, EULA, notices, shortcuts) and a zip of it. It refuses to finish if anything from `keygen/` would ship.
+- **Make the folder you sell:** `node desktop/release.mjs` writes `release/Cutline-<version>/` with four files (`Cutline.exe`, which runs without installing, READ-ME-FIRST.txt, EULA.txt and the third-party notices) and a zip of it. Add `--linux` for a Linux archive next to it. The Windows installer is still built in `desktop/dist`. The script refuses to finish if anything from `keygen/` would ship.
 - **Build the desktop app:** `node desktop/build.mjs` makes the Windows installer and portable build in `desktop/dist`. Add `--mac` or `--linux` on those systems, or `--dir` for an unpacked folder only.
 - **Run in a browser (development):** `npm install`, then `npm run dev`, then open the printed address in Chrome or Edge.
 

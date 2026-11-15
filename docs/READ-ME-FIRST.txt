@@ -1,0 +1,60 @@
+CUTLINE 1.0.0
+Video editor for cutting long footage into finished clips. Works fully offline: no account, no
+internet connection, nothing you make leaves your computer.
+
+Copyright (c) 2026 Chamod Gimhan. All rights reserved. Using Cutline means you accept EULA.txt.
+
+
+WHAT IS IN THIS FOLDER
+  Windows/Cutline-Setup-1.0.0.exe      Installer for Windows 10 and 11 (64-bit).
+  Windows/Cutline-Portable-1.0.0.exe   Runs without installing, e.g. from a USB stick.
+  Linux/Cutline-Linux-1.0.0.tar.gz     For 64-bit Linux.
+  SHORTCUTS.md                         Every keyboard shortcut.
+  EULA.txt                             The licence agreement.
+  THIRD_PARTY_LICENSES.txt             Licences of components and fonts Cutline includes.
+
+
+SYSTEM REQUIREMENTS
+  Windows 10 or 11 (64-bit), or a 64-bit Linux desktop. 8 GB of memory recommended.
+  A graphics card with WebGL2 support is recommended. Without it Cutline still runs, with fewer
+  effects in preview and export.
+
+
+INSTALL
+  Windows installer: double-click Cutline-Setup-1.0.0.exe and follow the steps. Windows may show
+  "Windows protected your PC" the first time; click "More info", then "Run anyway".
+  Windows portable: double-click Cutline-Portable-1.0.0.exe. Nothing is installed.
+  Linux: extract the archive, then run the "cutline" file inside the extracted folder. If it does
+  not start, run it from a terminal with: ./cutline --no-sandbox
+
+
+TRIAL AND LICENCE KEY
+  Cutline is fully usable without a key. Exported videos and images then carry a small Cutline
+  watermark. To remove it, buy a licence key, then in Cutline open Help > About and Licence, paste
+  the key and click Activate. Activation works offline. A key is for you alone, on up to three of
+  your own computers (see EULA.txt).
+
+
+FIRST EDIT IN FIVE STEPS
+  1. Click Import in the Media panel (or drag files onto it). MP4, MOV, M4A, WAV, PNG, JPEG and
+     WebP files are supported.
+  2. Double-click a file to open it in the Source monitor. Press I and O to mark the part you want.
+  3. Click Insert or Overwrite to put it on the timeline at the playhead.
+  4. Cut with Ctrl+K at the playhead, or the Razor tool (C). Select a clip to change its picture,
+     effects, sound and speed in the Inspector. Add titles with Ctrl+T and captions from the
+     Titles menu (SRT and VTT files can be imported).
+  5. Press Ctrl+E to export: MP4, WebM, a PNG frame or WAV audio, at the size you choose.
+  Save your project with Ctrl+S. Cutline also autosaves and offers to recover after a crash.
+
+
+GOOD TO KNOW
+  - Projects (.cutline files) store where your media files are, not copies of them. If you move
+    media, Cutline marks it offline; import the same file again and it is relinked.
+  - WebM and MKV files cannot be imported; convert them to MP4 first.
+  - Not included in this version: multicam, motion tracking, plugins (VST, OFX), nested sequences,
+    HDR and 10-bit, camera RAW, cloud or collaboration features, AI features.
+  - Help > Export Error Log saves a file you can send to the seller if something goes wrong.
+
+
+SUPPORT
+  Contact the shop or seller you bought your licence key from.

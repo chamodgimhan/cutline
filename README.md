@@ -7,6 +7,7 @@ Copyright (c) 2026 Chamod Gimhan. All rights reserved. See `LICENSE` and `EULA.t
 ## Install
 
 - **Windows:** run `Cutline-Setup-1.0.0.exe` (installer) or `Cutline-Portable-1.0.0.exe` (no install). Both builds are unsigned, so Windows SmartScreen asks once before the first run.
+- **Make the folder you sell:** `node desktop/release.mjs` builds everything and writes `release/Cutline-<version>/` (Windows installer, portable, Linux archive, READ-ME-FIRST.txt, EULA, notices, shortcuts) and a zip of it. It refuses to finish if anything from `keygen/` would ship.
 - **Build the desktop app:** `node desktop/build.mjs` makes the Windows installer and portable build in `desktop/dist`. Add `--mac` or `--linux` on those systems, or `--dir` for an unpacked folder only.
 - **Run in a browser (development):** `npm install`, then `npm run dev`, then open the printed address in Chrome or Edge.
 
@@ -40,7 +41,7 @@ Multicam, motion tracking, plugin hosts (VST, OFX), nested sequences, HDR and 10
 - Changing speed with pitch kept stretches each 0.4 s audio chunk on its own, which can be audible on music.
 - VTT cue settings and voice names are dropped on import.
 - Without WebGL2, preview and export use the Canvas 2D fallback. It draws only exposure, contrast, saturation, blur and flip, and shows every transition as a dissolve.
-- The Windows installer and portable builds are unsigned. Only the packaged app folder was launched in tests, not the installer itself. macOS and Linux targets are configured but were not built or tested.
+- The Windows installer and portable builds are unsigned. Only the packaged app folder was launched in tests, not the installer itself. The Linux archive is built on Windows and was not run on Linux. macOS must be built on a Mac (`node desktop/build.mjs --mac`).
 - Timing budgets were measured with software rendering (SwiftShader) on one machine. They vary with machine load.
 - `EULA.txt` is a template. Have a lawyer review it before selling.
 

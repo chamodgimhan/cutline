@@ -9,7 +9,7 @@ Phase 11: Hardening and release (done; tagged 1.0.0)
 - Phase 11 so far: phase11 smoke (workflow with byte-identical re-export after reopen, 50 cycles flat, keyboard pass with focus ring on every stop) green; fuzz 100,000 commands green (npm run fuzz); soak suite written (npm run smoke soak); contrast tests extended (clip fills darkened to 4.5:1 for clip names); inspector shows the picture part of a linked clip; README, tools/testReport.ts (npm run report -> TEST_REPORT.md, SHORTCUTS.md); no TODO/stub/mock outside tests.
 
 ## Next step
-Build finished: all phases done, v1.0.0 tagged. Possible follow-ups: AAC encoder delay signalling, B-frame source test, code signing, mac/linux builds, legal review of EULA.txt.
+Build finished (v1.0.0). Sellable folder: node desktop/release.mjs. OPEN, waiting for the owner: Electron ships its own FFmpeg (ffmpeg.dll / libffmpeg.so, LGPL-2.1), which SPEC forbids in the shipped app. Options: accept it (license notice already included), or replace Electron with a shell that uses the system browser engine (e.g. Tauri + WebView2). Other follow-ups: code signing certificate, Mac build on a Mac, legal review of EULA.txt.
 
 ## Budgets measured
 - Caches: 400 random frames over 8 files held at most 6 decoders and 72 MiB of frames (limit 384 MiB).

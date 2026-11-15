@@ -16,7 +16,7 @@ export default tseslint.config(
   {
     // The desktop shell runs in Electron's main process (CommonJS, Node globals).
     files: ['desktop/*.cjs', 'desktop/*.mjs'],
-    languageOptions: { globals: { require: 'readonly', __dirname: 'readonly', process: 'readonly', console: 'readonly', URL: 'readonly', Response: 'readonly', ReadableStream: 'readonly' } },
+    languageOptions: { globals: { require: 'readonly', __dirname: 'readonly', process: 'readonly', console: 'readonly', URL: 'readonly', Buffer: 'readonly', Response: 'readonly', ReadableStream: 'readonly' } },
     rules: { '@typescript-eslint/no-require-imports': 'off' },
   },
   {

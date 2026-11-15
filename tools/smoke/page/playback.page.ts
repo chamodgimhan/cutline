@@ -114,7 +114,10 @@ export async function sync(seconds: number, fixture = 'long_2h', fps = 24, width
   await sleep(300);
   clearInterval(poll);
   const px = renderer.readPixels();
-  const counter = readCounter(width, (x, y) => (px[(y * width + x) * 4] as number) > 128);
+  // The counter is laid out for the source size; when the sequence is larger, read the scaled-up picture.
+  const src = project.media[0]?.video?.width ?? width;
+  const k = width / src;
+  const counter = readCounter(src, (x, y) => (px[(Math.floor((y + 0.5) * k) * width + Math.floor((x + 0.5) * k)) * 4] as number) > 128);
   const out: SyncResult = {
     seconds, presented: t.stats.presented, dropped: t.stats.dropped, lagFrames: lag,
     clickErrorMs: clicks.map((tick) => ((tick / S - Math.round(tick / S)) * 1000)),

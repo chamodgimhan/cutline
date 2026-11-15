@@ -12,6 +12,7 @@
 - `src/ui/`: `main.ts` (mount, layout, splitters), `app.ts` (App: session + engine + import + key routing), `monitor.ts`, `bin.ts`, `timeline.ts` + `timelineDraw.ts`, `inspector.ts`, `sidePanels.ts` (meters, history, shortcut editor), `menus.ts`, `styles.ts`, `dom.ts`. `src/engine/importMedia.ts` checks decodability at import.
 - `tools/fixtures/`: test media generator (never shipped). `h264pcm.ts` lossless H.264 (I_PCM + P_Skip), `frame.ts` test picture + counter reader, `build.ts` specs, `generate.ts` CLI.
 - `tools/smoke/`: headless Chrome suites (playwright-core + system Chrome). `run.ts` CLI, `server.ts` (Vite dev server + harness page), `phaseN.ts` node side, `page/phaseN.page.ts` page side exposed as `window.T`.
+- `tools/fuzz.ts` long fuzz run; `tools/report.ts` result files in `fixtures/out/reports`; `tools/testReport.ts` writes TEST_REPORT.md and SHORTCUTS.md from them. Smoke runs record their result and bracketed measurement lines there.
 - `fixtures/manifest.json`: committed sizes, sha256 and frame hashes. `fixtures/out/` is generated and git-ignored.
 
 ## Conventions

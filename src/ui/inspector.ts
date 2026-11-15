@@ -104,7 +104,9 @@ export function inspectorPanel(app: App): HTMLElement {
 
   const render = framed(() => {
     const hits = s.selectedClips();
-    const one = hits.length === 1 ? hits[0]?.clip : undefined;
+    // A linked clip selects as picture + sound; show its picture part so effects and transform stay one click away.
+    const linked = hits.length > 1 && !!hits[0]?.clip.linkId && hits.every((x) => x.clip.linkId === hits[0]?.clip.linkId);
+    const one = hits.length === 1 ? hits[0]?.clip : linked ? (hits.find((x) => x.clip.video) ?? hits[0])?.clip : undefined;
     // Rebuild only when what is shown changes, and never under the user's cursor while typing.
     const sig = one ? `${one.id}:${JSON.stringify([one.name, one.enabled, one.start, one.duration, one.video, one.audio, one.text, one.effects, one.transitionIn, one.transitionOut, one.speed, one.reverse, one.pitchKeep, one.reframe, s.laneKey, s.seq.tracks.map((t) => [t.volume, t.pan])])}:${JSON.stringify([one.video, one.audio, one.effects]).includes('"keys"') ? s.playhead : ''}` : `${hits.length}:${JSON.stringify([s.seq.name, s.seq.width, s.seq.height, s.seq.fps, s.seq.sampleRate])}`;
     if (sig === shown) return;

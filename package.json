@@ -1,6 +1,6 @@
 {
   "name": "cutline",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "description": "Cutline: desktop video clipping editor",
   "author": "Chamod Gimhan",
@@ -14,7 +14,9 @@
     "test": "vitest run --silent --reporter=dot",
     "verify": "tsc --noEmit && eslint . --quiet && vitest run --silent --reporter=dot",
     "fixtures": "node tools/fixtures/generate.ts",
-    "smoke": "node tools/smoke/run.ts"
+    "smoke": "node tools/smoke/run.ts",
+    "fuzz": "node tools/fuzz.ts",
+    "report": "node tools/testReport.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

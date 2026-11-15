@@ -32,3 +32,16 @@ export async function blankPage(browser: Browser): Promise<Page> {
   await page.goto('http://localhost:9/');
   return page;
 }
+
+export type PageCounts = { heapMiB: number; nodes: number; listeners: number };
+
+/** Live JS heap, DOM nodes and event listeners of a page, measured after a full garbage collection. */
+export async function pageCounts(page: Page): Promise<PageCounts> {
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Performance.enable');
+  await cdp.send('HeapProfiler.collectGarbage');
+  const { metrics } = await cdp.send('Performance.getMetrics');
+  await cdp.detach();
+  const m = (name: string): number => metrics.find((x) => x.name === name)?.value ?? Number.NaN;
+  return { heapMiB: m('JSHeapUsedSize') / 2 ** 20, nodes: m('Nodes'), listeners: m('JSEventListeners') };
+}

@@ -20,5 +20,13 @@ describe('theme', () => {
     }
     expect(contrastRatio(color.textFaint, color.bg2)).toBeGreaterThanOrEqual(3);
     expect(contrastRatio(color.accentText, color.accent)).toBeGreaterThanOrEqual(4.5);
+    // Clip names are drawn in the text colour on the clip fill; warnings are text in the danger colour.
+    for (const fill of [color.clipVideo, color.clipAudio, color.clipText, color.clipCaption, color.clipAdjust]) expect(contrastRatio(color.text, fill), fill).toBeGreaterThanOrEqual(4.5);
+    for (const bg of [color.bg0, color.bg1, color.bg2, color.bg3]) expect(contrastRatio(color.danger, bg)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('keeps focus rings, clips and markers visible against their surfaces (WCAG non-text 3:1)', () => {
+    for (const bg of [color.bg0, color.bg1, color.bg2, color.bg3]) expect(contrastRatio(color.select, bg)).toBeGreaterThanOrEqual(3);
+    for (const fill of [color.clipVideo, color.clipAudio, color.clipText, color.clipCaption, color.clipAdjust, color.marker, color.accent]) expect(contrastRatio(fill, color.bg1), fill).toBeGreaterThanOrEqual(3);
   });
 });
